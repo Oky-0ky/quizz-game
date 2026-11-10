@@ -156,6 +156,7 @@ export function samplePolyline(
   points: Array<[number, number]>,
   count: number
 ): Array<{ x: number; y: number }> {
+  if (!points.length || count <= 0) return [];
   if (count <= 1) return [{ x: points[0][0], y: points[0][1] }];
   return Array.from({ length: count }, (_, i) =>
     pointAlongPolyline(points, i / (count - 1))

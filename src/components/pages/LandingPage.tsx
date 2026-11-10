@@ -31,13 +31,16 @@ const BG_TILES: BgTile[] = [
 
 export default function LandingPage() {
   const startNewGame = useGameStore(s => s.startNewGame);
+  const savedBoardSettings = useGameStore(s => s.savedBoardSettings);
 
   const [step, setStep] = useState<'home' | 'setup' | 'teams'>('home');
   const [gameName, setGameName] = useState('Quiz Board Adventure');
   const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
   const [selectedSubjects, setSelectedSubjects] = useState<SubjectId[]>(DEFAULT_SUBJECTS);
-  const [selectedMap, setSelectedMap] = useState<BoardMapId>('adventure');
-  const [selectedPath, setSelectedPath] = useState<AdventurePathId>('hutan');
+  const [selectedMapOverride, setSelectedMapOverride] = useState<BoardMapId | null>(null);
+  const [selectedPathOverride, setSelectedPathOverride] = useState<AdventurePathId | null>(null);
+  const selectedMap = selectedMapOverride ?? savedBoardSettings.boardMapId;
+  const selectedPath = selectedPathOverride ?? savedBoardSettings.adventurePathId;
   const [teams, setTeams] = useState<Array<{
     name: string;
     color: string;
@@ -263,7 +266,7 @@ export default function LandingPage() {
                 {BOARD_MAPS.map(map => (
                   <button
                     key={map.id}
-                    onClick={() => setSelectedMap(map.id)}
+                    onClick={() => setSelectedMapOverride(map.id)}
                     className={`text-left rounded-xl px-4 py-3 border transition-all ${
                       selectedMap === map.id
                         ? 'bg-emerald-600/40 border-emerald-300'
@@ -283,7 +286,7 @@ export default function LandingPage() {
                   {ADVENTURE_PATHS.map(path => (
                     <button
                       key={path.id}
-                      onClick={() => setSelectedPath(path.id)}
+                      onClick={() => setSelectedPathOverride(path.id)}
                       className={`text-left rounded-xl px-3 py-2.5 border transition-all ${
                         selectedPath === path.id
                           ? 'border-white/70'

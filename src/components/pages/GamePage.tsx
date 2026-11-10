@@ -15,10 +15,13 @@ import AdminPanel from '@/components/game/AdminPanel';
 import InventoryModal from '@/components/game/InventoryModal';
 import ResultsPage from '@/components/pages/ResultsPage';
 import FinalChallengeModal from '@/components/game/FinalChallengeModal';
+import TrapTheftModal from '@/components/game/TrapTheftModal';
+import HokiMbgModal from '@/components/game/HokiMbgModal';
 
 export default function GamePage() {
   const game = useGameStore(s => s.game);
   const setPhase = useGameStore(s => s.setPhase);
+  const isShopOpen = useGameStore(s => s.isShopOpen);
   const [showShop, setShowShop] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -147,7 +150,9 @@ export default function GamePage() {
       {game.phase === 'question' && <QuestionModal />}
       {(game.phase === 'duel' || game.activeDuel?.phase === 'challenger_answering' || game.activeDuel?.phase === 'defender_answering') && <DuelModal />}
       {game.phase === 'final_challenge' && <FinalChallengeModal />}
-      {showShop && <ShopModal onClose={() => setShowShop(false)} />}
+      {game.pendingTrapTheft && <TrapTheftModal />}
+      {game.pendingHokiMbg && <HokiMbgModal />}
+      {(showShop || isShopOpen) && <ShopModal onClose={() => setShowShop(false)} />}
       {showInventory && <InventoryModal onClose={() => setShowInventory(false)} />}
       {showAdmin && <AdminPanel onClose={() => setShowAdmin(false)} />}
       {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}

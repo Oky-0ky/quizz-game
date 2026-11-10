@@ -663,9 +663,9 @@ export default function AdventureMapView({
               const tileType = board[idx]?.type ?? 'normal';
               const isStart = idx === 0;
               const isFinish = idx === path.waypoints.length - 1;
-              const landmark = path.landmarks.find((l) => l.index === idx);
-              const isHovered = hoveredTile?.position === tileNum;
               const boardTile = board[idx];
+              const tileIcon = !isStart && !isFinish && tileType !== 'normal' ? boardTile?.icon : undefined;
+              const isHovered = hoveredTile?.position === tileNum;
               const isPawnHere = assignedTeam && assignedTeam.position === tileNum;
 
               const ts = tileSize;
@@ -678,7 +678,7 @@ export default function AdventureMapView({
               if (isStart) { fill = '#fef9c3'; stroke = '#ca8a04'; strokeW = 3; }
               else if (isFinish) { fill = '#d1fae5'; stroke = '#059669'; strokeW = 3; }
               else if (tileType === 'reward') { fill = '#fef3c7'; stroke = '#d97706'; }
-              else if (tileType === 'mystery') { fill = '#ede9fe'; stroke = '#7c3aed'; }
+              else if (tileType === 'mystery' || tileType === 'surprise_box') { fill = '#ede9fe'; stroke = '#7c3aed'; }
               else if (tileType === 'shop') { fill = '#fce7f3'; stroke = '#be185d'; }
               else if (tileType === 'duel') { fill = '#fee2e2'; stroke = '#dc2626'; }
               else if (tileType === 'trap') { fill = '#fff7ed'; stroke = '#ea580c'; }
@@ -727,34 +727,34 @@ export default function AdventureMapView({
                     />
                   )}
 
-                  {/* Landmark icon */}
-                  {landmark && (
+                  {/* Special tile icon */}
+                  {tileIcon && (
                     <text
                       x={0}
                       y={-5}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fontSize={isStart || isFinish ? 16 : 14}
+                      fontSize={14}
                     >
-                      {isStart ? '🏠' : isFinish ? '🏫' : landmark.icon}
+                      {tileIcon}
                     </text>
                   )}
 
                   {/* Start / Finish special icons */}
-                  {isStart && !landmark && (
+                  {isStart && (
                     <text x={0} y={-5} textAnchor="middle" dominantBaseline="middle" fontSize={16}>🏠</text>
                   )}
-                  {isFinish && !landmark && (
+                  {isFinish && (
                     <text x={0} y={-5} textAnchor="middle" dominantBaseline="middle" fontSize={16}>🏫</text>
                   )}
 
                   {/* Tile number */}
                   <text
                     x={0}
-                    y={landmark || isStart || isFinish ? hw - 7 : 0}
+                    y={tileIcon || isStart || isFinish ? hw - 7 : 0}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fontSize={landmark || isStart || isFinish ? 10 : 13}
+                    fontSize={tileIcon || isStart || isFinish ? 10 : 13}
                     fontWeight="bold"
                     fill={isStart ? '#92400e' : isFinish ? '#065f46' : stroke}
                     fontFamily="sans-serif"

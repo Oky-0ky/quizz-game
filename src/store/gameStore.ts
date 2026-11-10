@@ -1,8 +1,10 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import {
   GameState, Team, TeamMember, Question, AdventurePathId,
   GameSettings, GamePhase, Notification, Duel,
-  SurpriseCard, InventoryItem, DEFAULT_SETTINGS, Achievement, ActiveEffect, TurnHistory
+  SurpriseCard, InventoryItem, DEFAULT_SETTINGS, Achievement, ActiveEffect, TurnHistory,
+  MysteryBoxPrize, MysteryBoxPrizeWeights,
 } from '@/types/game';
 import { SHOP_ITEMS, QUESTION_BANK, RANDOM_EVENTS, MISSIONS_DATA, SURPRISE_CARDS, getQuestionsBySubjects } from '@/data/gameData';
 import { generateBoard } from '@/utils/boardGenerator';
@@ -21,6 +23,22 @@ function normalizeAnswer(value: string): string {
     .replace(/[\s.,;:!?'"()]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function chooseMysteryBoxPrize(weights: MysteryBoxPrizeWeights): MysteryBoxPrize {
+  const prizes = Object.keys(weights) as MysteryBoxPrize[];
+  const safeWeights = prizes.map(prize => Math.max(0, Number.isFinite(weights[prize]) ? weights[prize] : 0));
+  const totalWeight = safeWeights.reduce((total, weight) => total + weight, 0);
+  if (totalWeight === 0) {
+    return prizes[Math.floor(Math.random() * prizes.length)];
+  }
+
+  let roll = Math.random() * totalWeight;
+  for (let index = 0; index < prizes.length; index++) {
+    roll -= safeWeights[index];
+    if (roll < 0) return prizes[index];
+  }
+  return prizes[prizes.length - 1];
 }
 
 /**
@@ -52,6 +70,46 @@ function createTileQuestionIds(totalTiles: number, questionBank: Question[] = QU
       shuffledIds[index % shuffledIds.length],
     ])
   );
+}
+
+function normalizeBoardSettings(settings: GameSettings): GameSettings {
+  const isAdventure = settings.boardMapId === 'adventure';
+  const totalTiles = isAdventure
+    ? 30
+    : Math.min(100, Math.max(20, Math.floor(settings.totalTiles)));
+  const specialTilePositions: Record<number, GameSettings['specialTilePositions'][number]> = {};
+
+  for (const [position, type] of Object.entries(settings.specialTilePositions)) {
+    const tilePosition = Number(position);
+    if (
+      Number.isInteger(tilePosition) &&
+      tilePosition > 1 &&
+      tilePosition < totalTiles &&
+      type !== 'start' &&
+      type !== 'finish'
+    ) {
+      specialTilePositions[tilePosition] = type;
+    }
+  }
+
+  specialTilePositions[1] = 'start';
+  specialTilePositions[totalTiles] = 'finish';
+
+  return { ...settings, totalTiles, specialTilePositions };
+}
+
+type SavedBoardSettings = Pick<
+  GameSettings,
+  'totalTiles' | 'boardMapId' | 'adventurePathId' | 'specialTilePositions'
+>;
+
+function getSavedBoardSettings(settings: GameSettings): SavedBoardSettings {
+  return {
+    totalTiles: settings.totalTiles,
+    boardMapId: settings.boardMapId,
+    adventurePathId: settings.adventurePathId,
+    specialTilePositions: { ...settings.specialTilePositions },
+  };
 }
 
 function chooseQuestionForTile(
@@ -144,6 +202,7 @@ function createInitialTeam(name: string, color: string, avatarEmoji: string, mem
 interface GameStore {
   game: GameState | null;
   isAdmin: boolean;
+  savedBoardSettings: SavedBoardSettings;
 
   // Shop & Modals UI state
   isShopOpen: boolean;
@@ -180,6 +239,13 @@ interface GameStore {
   rollDice: () => void;
   movePion: (teamId: string, steps: number) => void;
   applyTileEffect: (teamId: string, tilePosition: number) => void;
+  revealMysteryBoxPrize: () => void;
+  claimMysteryBoxItem: (itemId: string) => boolean;
+  stealMysteryBoxReward: (targetTeamId: string) => boolean;
+  finishMysteryBox: () => void;
+  claimTrapCoins: (targetTeamId?: string) => boolean;
+  applyHokiMbgPenalty: (targetTeamId?: string) => boolean;
+  claimFreeShopTileItem: (itemId: string) => boolean;
   endTurn: () => void;
   
   // Shop & Items
@@ -216,9 +282,10 @@ interface GameStore {
   adjustTeamEffects: (teamId: string, effects: ActiveEffect[]) => void;
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(persist((set, get) => ({
   game: null,
   isAdmin: true,
+  savedBoardSettings: getSavedBoardSettings(DEFAULT_SETTINGS),
 
   isShopOpen: false,
   activeShopTeamId: undefined,
@@ -227,7 +294,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const activeId = teamId || (game?.teams[game.currentTeamIndex]?.id);
     set({ isShopOpen: true, activeShopTeamId: activeId });
   },
-  closeShop: () => set({ isShopOpen: false }),
+  closeShop: () => {
+    const game = get().game;
+    if (!game?.pendingShopTile) {
+      set({ isShopOpen: false, activeShopTeamId: undefined });
+      return;
+    }
+
+    set({
+      isShopOpen: false,
+      activeShopTeamId: undefined,
+      game: { ...game, pendingShopTile: undefined },
+    });
+    get().endTurn();
+  },
 
   isInventoryOpen: false,
   activeInventoryTeamId: undefined,
@@ -242,11 +322,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   closeCardModal: () => set({ activeCardDrawn: null }),
 
   startNewGame: (name, teamsData, customSettings) => {
-    const settings = {
+    const settings = normalizeBoardSettings({
       ...DEFAULT_SETTINGS,
+      ...get().savedBoardSettings,
       ...customSettings,
-      totalTiles: Math.min(100, Math.max(1, customSettings?.totalTiles ?? DEFAULT_SETTINGS.totalTiles)),
-    };
+    });
     const board = generateBoard(
       settings.totalTiles,
       settings.specialTilePositions,
@@ -295,7 +375,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }],
       startedAt: Date.now(),
     };
-    set({ game: newGame, isAdmin: true });
+    set({ game: newGame, isAdmin: true, savedBoardSettings: getSavedBoardSettings(settings) });
   },
 
   createGame: (name: string) => {
@@ -390,11 +470,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   updateSettings: (settings) => {
     const { game } = get();
     if (!game) return;
-    const newSettings = {
+    const newSettings = normalizeBoardSettings({
       ...game.settings,
       ...settings,
-      totalTiles: Math.min(100, Math.max(1, settings.totalTiles ?? game.settings.totalTiles)),
-    };
+    });
     const board = generateBoard(
       newSettings.totalTiles,
       newSettings.specialTilePositions,
@@ -413,7 +492,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
         tileQuestionIds[position] = questions[(position - 1) % questions.length].id;
       }
     }
-    set({ game: { ...game, settings: newSettings, board, questions, tileQuestionIds } });
+    const teams = game.teams.map(team => ({
+      ...team,
+      position: Math.min(team.position, newSettings.totalTiles),
+      ...(settings.adventurePathId !== undefined && newSettings.boardMapId === 'adventure'
+        ? { pathId: newSettings.adventurePathId }
+        : {}),
+    }));
+    set({
+      game: { ...game, settings: newSettings, board, questions, tileQuestionIds, teams },
+      savedBoardSettings: getSavedBoardSettings(newSettings),
+    });
   },
 
   startGame: () => {
@@ -626,7 +715,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     const existingProtection = currentTeam.isProtected && currentTeam.protectionTurns > 0;
     const shieldUsed = !isCorrect && Boolean(antiBackShield || activeAntiBackShield || existingProtection);
-    // Perisai Langkah: hanya tim yang DITANDAI sebagai target yang terkena efek.
+    // Jebakan Langkah hanya memengaruhi tim yang ditandai sebagai target.
     const stepShieldOwner = isCorrect
       ? game.teams.find(team =>
           team.id !== currentTeam.id
@@ -694,7 +783,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const answerEvents = [
       isCorrect ? 'Jawaban benar.' : wasUnanswered ? 'Waktu habis tanpa jawaban.' : 'Jawaban salah.',
       ...(shieldUsed ? ['Tameng Anti Mundur digunakan; posisi tetap.'] : []),
-      ...(stepShieldUsed ? ['Perisai Langkah: tidak maju, poin & koin jawaban benar hangus.'] : []),
+      ...(stepShieldUsed ? ['Jebakan Langkah: tidak maju, poin & koin jawaban benar hangus.'] : []),
       ...(rewardLabel ? [`Hadiah kotak ${startingPosition}: ${rewardLabel}.`] : []),
     ];
     const updatedTeams = game.teams.map(team => {
@@ -779,7 +868,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             : shieldUsed && activeAntiBackShield
               ? ['Tameng Anti Mundur']
               : stepShieldUsed
-                ? ['Perisai Langkah']
+                ? ['Jebakan Langkah']
                 : [],
           events: answerEvents,
           reward: rewardLabel,
@@ -805,7 +894,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         type: 'success',
         title: '✅ Jawaban Benar!',
         message: stepShieldUsed
-          ? `Perisai Langkah ${stepShieldOwner?.name}: jawaban benar, tapi tidak maju & poin/koin hangus.${rewardLabel ? ` Hadiah: ${rewardLabel}.` : ''}`
+          ? `Jebakan Langkah ${stepShieldOwner?.name}: jawaban benar, tapi tidak maju & poin/koin hangus.${rewardLabel ? ` Hadiah: ${rewardLabel}.` : ''}`
           : `+${coinsEarned} koin · maju 1 kotak.${rewardLabel ? ` Hadiah: ${rewardLabel}.` : ''}`,
         emoji: '🎉',
       });
@@ -953,16 +1042,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       case 'reward': {
         const latestGame = get().game;
         const latestTeam = latestGame?.teams.find(t => t.id === teamId);
-        if (!latestGame || !latestTeam || latestTeam.claimedRewardTiles.includes(tilePosition)) {
+        if (!latestGame || !latestTeam) {
           setTimeout(() => get().endTurn(), 500);
           break;
         }
-        const rewardCoins = 15;
+        const rewardCoins = 100;
         const updatedTeamsReward = latestGame.teams.map(t => t.id !== teamId ? t : {
           ...t,
           coins: t.coins + rewardCoins,
-          score: t.score + 5,
-          claimedRewardTiles: [...t.claimedRewardTiles, tilePosition],
+          claimedRewardTiles: t.claimedRewardTiles.includes(tilePosition)
+            ? t.claimedRewardTiles
+            : [...t.claimedRewardTiles, tilePosition],
           history: [...t.history, {
             turnNumber: latestGame.currentTurn,
             teamId,
@@ -973,88 +1063,74 @@ export const useGameStore = create<GameStore>((set, get) => ({
             tilesMovedForward: 0,
             tilesMovedBackward: 0,
             itemsUsed: [],
-            events: ['Hadiah kotak spesial: +15 koin dan satu Kartu Kejutan.'],
-            reward: 'Kartu Kejutan',
+            events: ['Kotak Hadiah: mendapatkan +100 koin.'],
+            reward: '+100 koin',
             timestamp: Date.now(),
           }],
         });
         set({ game: { ...latestGame, teams: updatedTeamsReward } });
-        soundManager.playCoin();
-        get().addNotification({ type: 'success', title: '🎁 Kotak Hadiah!', message: `+${rewardCoins} koin diperoleh & mendapatkan Kartu Kejutan!`, emoji: '🎁' });
-        setTimeout(() => {
-          get().drawSurpriseCard(teamId);
-          setTimeout(() => get().endTurn(), 1000);
-        }, 500);
+        soundManager.playVictory();
+        get().addNotification({ type: 'success', title: '🎁 Kotak Hadiah!', message: `+${rewardCoins} Koin`, emoji: '🎁' });
+        setTimeout(() => get().endTurn(), 1200);
         break;
       }
 
       case 'trap': {
-        const penaltySteps = tile.effect?.value || 2;
         soundManager.playWrong();
-        get().addNotification({ type: 'error', title: '🕳️ Jebakan!', message: `Mundur ${penaltySteps} kotak!`, emoji: '😱' });
-        setTimeout(() => {
-          const { game: g } = get();
-          if (!g) return;
-          const newPos = Math.max(1, team.position - penaltySteps);
-          const updatedTeams = g.teams.map(t => t.id !== teamId ? t : addTeamHistory(
-            { ...t, position: newPos },
-            g,
-            {
-              tilePosition,
-              tilesMovedBackward: team.position - newPos,
-              events: [`Jebakan memundurkan kelompok ${penaltySteps} kotak.`],
-            }
-          ));
-          set({ game: { ...g, teams: updatedTeams } });
-          setTimeout(() => get().endTurn(), 800);
-        }, 500);
+        const latestGame = get().game;
+        if (!latestGame || latestGame.pendingTrapTheft) return;
+        set({
+          game: {
+            ...latestGame,
+            pendingTrapTheft: { teamId, tilePosition },
+          },
+        });
+        get().addNotification({
+          type: 'warning',
+          title: '🕳️ Kotak Jebakan!',
+          message: 'Pilih kelompok lawan untuk mengambil hingga 100 koin.',
+          emoji: '🪙',
+        });
         break;
       }
 
       case 'shop': {
         if (game.settings.enableShop) {
           soundManager.playCoin();
-          get().addNotification({ type: 'info', title: '🏪 Kotak Toko!', message: 'Pilih item toko yang paling sesuai dengan strategimu.', emoji: '🛒' });
-          get().openShop(teamId);
+          const latestGame = get().game;
+          if (!latestGame || latestGame.pendingShopTile) return;
+          set({
+            isShopOpen: true,
+            activeShopTeamId: teamId,
+            game: {
+              ...latestGame,
+              pendingShopTile: { teamId, tilePosition, freePurchaseAvailable: true },
+            },
+          });
+          get().addNotification({
+            type: 'info',
+            title: '🏪 Kotak Toko!',
+            message: 'Pilih satu item seharga tepat 100 koin secara gratis. Item lain tetap berharga normal.',
+            emoji: '🛒',
+          });
         } else {
           setTimeout(() => get().endTurn(), 500);
         }
         break;
       }
 
-      case 'mystery': {
-        const roll = Math.random();
-        if (roll < 0.5) {
-          get().addNotification({ type: 'info', title: '✨ Kotak Misteri!', message: 'Mendapatkan Kartu Kejutan misterius!', emoji: '🃏' });
-          get().drawSurpriseCard(teamId);
-          setTimeout(() => get().endTurn(), 1200);
-        } else {
-          const events = RANDOM_EVENTS;
-          const randomEvent = events[Math.floor(Math.random() * events.length)];
-          soundManager.playItem();
-          get().addNotification({ type: 'event', title: `${randomEvent.emoji} ${randomEvent.name}`, message: randomEvent.description });
-          const latestGame = get().game;
-          if (!latestGame) return;
-          const coinsChange = randomEvent.effect.value || 0;
-          const mysteryTeams = latestGame.teams.map(t => {
-            if (randomEvent.affectsAllTeams || t.id === teamId) {
-              if (randomEvent.effect.type === 'gain_coins_all' || randomEvent.effect.type === 'gain_coins_last') {
-                return addTeamHistory(
-                  { ...t, coins: t.coins + coinsChange },
-                  latestGame,
-                  {
-                    tilePosition,
-                    coinsChange,
-                    events: [`Kotak misteri: ${randomEvent.name} (+${coinsChange} koin).`],
-                  }
-                );
-              }
-            }
-            return t;
-          });
-          set({ game: { ...latestGame, teams: mysteryTeams } });
-          setTimeout(() => get().endTurn(), 1500);
-        }
+      case 'mystery':
+      case 'surprise_box': {
+        const latestGame = get().game;
+        if (!latestGame || latestGame.pendingMysteryBox) return;
+
+        const prize = chooseMysteryBoxPrize(latestGame.settings.mysteryBoxPrizeWeights);
+        set({
+          game: {
+            ...latestGame,
+            pendingMysteryBox: { teamId, tilePosition, prize, status: 'spinning' },
+          },
+        });
         break;
       }
 
@@ -1077,8 +1153,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       case 'challenge': {
         soundManager.playItem();
-        get().addNotification({ type: 'info', title: '⚡ Kotak Tantangan!', message: 'Jawab pertanyaan bonus!', emoji: '🎯' });
-        get().startTurn();
+        const latestGame = get().game;
+        if (!latestGame || latestGame.pendingHokiMbg) return;
+        set({
+          game: {
+            ...latestGame,
+            pendingHokiMbg: { teamId, tilePosition },
+          },
+        });
+        get().addNotification({
+          type: 'info',
+          title: '⚡ Kotak Hoki MBG!',
+          message: 'Pilih kelompok lawan untuk mengurangi hingga 100 poin.',
+          emoji: '🎯',
+        });
         break;
       }
 
@@ -1134,9 +1222,463 @@ export const useGameStore = create<GameStore>((set, get) => ({
         break;
       }
 
+      case 'big_reward': {
+        // Big reward: 100 coins
+        soundManager.playCoin();
+        get().addNotification({ type: 'success', title: '🎁 Hadiah Besar!', message: '+100 koin!', emoji: '💰' });
+        
+        const latestGame = get().game;
+        if (!latestGame) return;
+        
+        const updatedTeams = latestGame.teams.map(t => addTeamHistory(
+          { ...t, coins: t.coins + 100 },
+          latestGame,
+          {
+            tilePosition,
+            coinsChange: 100,
+            events: ['Hadiah kotak spesial: +100 koin.'],
+            reward: '+100 koin',
+          }
+        ));
+        
+        set({ game: { ...latestGame, teams: updatedTeams } });
+        setTimeout(() => get().endTurn(), 1000);
+        break;
+      }
+
+      case 'free_shop': {
+        // Free shop item (price 100 coins for free)
+        soundManager.playCoin();
+        get().addNotification({ type: 'success', title: '🛒 Toko Gratis!', message: 'Item gratis (harga 100 koin)!', emoji: '🛒' });
+        
+        const latestGame = get().game;
+        if (!latestGame) return;
+        
+        const freeItems = ['speed_boots', 'adventurer_rocket', 'double_step', 'super_step'];
+        const selectedItem = freeItems[Math.floor(Math.random() * freeItems.length)];
+        
+        const updatedTeams = latestGame.teams.map(t => {
+          const item = SHOP_ITEMS.find(i => i.id === selectedItem);
+          if (!item) return t;
+          
+          return addTeamHistory(
+            { ...t, inventory: [...t.inventory, { id: uuidv4(), itemId: item.id, item, quantity: 1, usedCount: 0 }] },
+            latestGame,
+            {
+              tilePosition,
+              itemsUsed: [item.name],
+              events: [`Item gratis dari toko: ${item.name}!`],
+              reward: item.name,
+            }
+          );
+        });
+        
+        set({ game: { ...latestGame, teams: updatedTeams } });
+        setTimeout(() => get().endTurn(), 1000);
+        break;
+      }
+
+      case 'trap_with_penalty': {
+        const penaltySteps = tile.effect?.value || 2;
+        const penaltyAmount = tile.effect?.penalty || 50;
+        soundManager.playWrong();
+        get().addNotification({ type: 'error', title: '🕳️ Jebakan dengan Hukuman!', message: `Mundur ${penaltySteps} kotak! ${penaltyAmount} poin/koin hilang!`, emoji: '😱' });
+        setTimeout(() => {
+          const { game: g } = get();
+          if (!g) return;
+          const newPos = Math.max(1, team.position - penaltySteps);
+          const updatedTeams = g.teams.map(t => t.id !== teamId ? t : {
+            ...t,
+            position: newPos,
+            score: Math.max(0, t.score - penaltyAmount),
+            coins: Math.max(0, t.coins - penaltyAmount)
+          });
+          set({ game: { ...g, teams: updatedTeams } });
+          setTimeout(() => get().endTurn(), 800);
+        }, 500);
+        break;
+      }
+
       default:
         setTimeout(() => get().endTurn(), 300);
     }
+  },
+
+  claimTrapCoins: (targetTeamId) => {
+    const game = get().game;
+    const pending = game?.pendingTrapTheft;
+    if (!game || !pending) return false;
+
+    const team = game.teams.find(candidate => candidate.id === pending.teamId);
+    if (!team) return false;
+
+    const target = targetTeamId
+      ? game.teams.find(candidate => candidate.id === targetTeamId && candidate.id !== team.id)
+      : undefined;
+    if (targetTeamId && (!target || target.coins <= 0)) return false;
+    if (!targetTeamId && game.teams.some(candidate => candidate.id !== team.id && candidate.coins > 0)) {
+      return false;
+    }
+
+    const amount = target ? Math.min(100, target.coins) : 0;
+    const tile = game.board.find(candidate => candidate.position === pending.tilePosition);
+    const shouldMoveBack = !target || target.coins < 100;
+    const penaltySteps = shouldMoveBack ? (tile?.effect?.value || 2) : 0;
+    const newPosition = Math.max(1, team.position - penaltySteps);
+    const events = [
+      ...(target
+        ? [`Kotak Jebakan: mengambil ${amount} koin dari ${target.name}.`]
+        : ['Kotak Jebakan: tidak ada koin yang dapat dicuri dari kelompok lawan.']),
+      ...(shouldMoveBack
+        ? [`Jebakan memundurkan kelompok ${team.name} ${team.position - newPosition} kotak.`]
+        : ['Berhasil mengambil 100 koin, jadi pion tidak mundur.']),
+    ];
+
+    const teams = game.teams.map(candidate => {
+      if (candidate.id === team.id) {
+        return addTeamHistory(
+          { ...candidate, coins: candidate.coins + amount, position: newPosition },
+          game,
+          {
+            tilePosition: pending.tilePosition,
+            coinsChange: amount,
+            tilesMovedBackward: team.position - newPosition,
+            events,
+            reward: amount > 0 ? `+${amount} koin dari ${target?.name}` : undefined,
+          }
+        );
+      }
+      if (target && candidate.id === target.id) {
+        return addTeamHistory(
+          { ...candidate, coins: candidate.coins - amount },
+          game,
+          {
+            tilePosition: pending.tilePosition,
+            coinsChange: -amount,
+            events: [`${amount} koin diambil oleh ${team.name} dari kotak Jebakan.`],
+          }
+        );
+      }
+      return candidate;
+    });
+
+    set({ game: { ...game, teams, pendingTrapTheft: undefined } });
+    if (amount > 0 && target) {
+      soundManager.playCoin();
+      get().addNotification({
+        type: 'success',
+        title: '🪙 Koin Berhasil Dicuri!',
+        message: shouldMoveBack
+          ? `${team.name} mengambil ${amount} koin dari ${target.name}. Pion mundur ${team.position - newPosition} kotak.`
+          : `${team.name} mengambil 100 koin dari ${target.name}. Pion tidak mundur.`,
+        emoji: '🕳️',
+      });
+    } else {
+      get().addNotification({
+        type: 'info',
+        title: '🕳️ Efek Jebakan Selesai',
+        message: shouldMoveBack
+          ? `Tidak ada koin lawan yang tersedia. Pion mundur ${team.position - newPosition} kotak.`
+          : 'Efek Jebakan selesai.',
+        emoji: '😮',
+      });
+    }
+    setTimeout(() => get().endTurn(), 800);
+    return true;
+  },
+
+  applyHokiMbgPenalty: (targetTeamId) => {
+    const game = get().game;
+    const pending = game?.pendingHokiMbg;
+    if (!game || !pending) return false;
+
+    const team = game.teams.find(candidate => candidate.id === pending.teamId);
+    if (!team) return false;
+
+    const target = targetTeamId
+      ? game.teams.find(candidate => candidate.id === targetTeamId && candidate.id !== team.id)
+      : undefined;
+    if (targetTeamId && (!target || target.score <= 0)) return false;
+    if (!targetTeamId && game.teams.some(candidate => candidate.id !== team.id && candidate.score > 0)) {
+      return false;
+    }
+
+    const amount = target ? Math.min(100, target.score) : 0;
+    const teams = game.teams.map(candidate => {
+      if (candidate.id === team.id) {
+        return addTeamHistory(candidate, game, {
+          tilePosition: pending.tilePosition,
+          events: target
+            ? [`Kotak Hoki MBG: mengurangi ${amount} poin ${target.name}.`]
+            : ['Kotak Hoki MBG: tidak ada poin lawan yang dapat dikurangi.'],
+          reward: amount > 0 ? `-${amount} poin dari ${target?.name}` : undefined,
+        });
+      }
+      if (target && candidate.id === target.id) {
+        return addTeamHistory(
+          { ...candidate, score: candidate.score - amount },
+          game,
+          {
+            tilePosition: pending.tilePosition,
+            events: [`Kehilangan ${amount} poin karena Kotak Hoki MBG dari ${team.name}.`],
+          }
+        );
+      }
+      return candidate;
+    });
+
+    set({ game: { ...game, teams, pendingHokiMbg: undefined } });
+    if (target && amount > 0) {
+      soundManager.playWrong();
+      get().addNotification({
+        type: 'success',
+        title: '⚡ Hoki MBG!',
+        message: `${team.name} mengurangi ${amount} poin ${target.name}.`,
+        emoji: '🎯',
+      });
+    } else {
+      get().addNotification({
+        type: 'info',
+        title: '⚡ Hoki MBG Selesai',
+        message: 'Tidak ada poin lawan yang tersedia untuk dikurangi.',
+        emoji: '🎯',
+      });
+    }
+    setTimeout(() => get().endTurn(), 800);
+    return true;
+  },
+
+  revealMysteryBoxPrize: () => {
+    const game = get().game;
+    const pending = game?.pendingMysteryBox;
+    if (!game || !pending || pending.status !== 'spinning') return;
+
+    soundManager.playCorrect();
+
+    if (pending.prize === 'free_item') {
+      const hasAvailableItem = game.shopItems.some(item =>
+        item.price === 100 && item.isEnabled && item.currentStock > 0
+      );
+      if (!hasAvailableItem) {
+        set({
+          game: {
+            ...game,
+            pendingMysteryBox: {
+              ...pending,
+              status: 'complete',
+              resultMessage: 'Tidak ada item seharga 100 koin yang tersedia di toko saat ini.',
+            },
+          },
+        });
+        return;
+      }
+      set({ game: { ...game, pendingMysteryBox: { ...pending, status: 'choosing_item' } } });
+      return;
+    }
+
+    if (pending.prize === 'steal') {
+      if (game.teams.length < 2) {
+        set({
+          game: {
+            ...game,
+            pendingMysteryBox: {
+              ...pending,
+              status: 'complete',
+              resultMessage: 'Tidak ada kelompok lawan untuk dipilih.',
+            },
+          },
+        });
+        return;
+      }
+      set({ game: { ...game, pendingMysteryBox: { ...pending, status: 'choosing_target' } } });
+      return;
+    }
+
+    const reward = pending.prize === 'coins_100' ? 100 : 200;
+    const team = game.teams.find(candidate => candidate.id === pending.teamId);
+    if (!team) {
+      set({ game: { ...game, pendingMysteryBox: { ...pending, status: 'complete', resultMessage: 'Tim penerima hadiah tidak ditemukan.' } } });
+      return;
+    }
+
+    const updatedTeams = game.teams.map(candidate => candidate.id !== team.id ? candidate : addTeamHistory(
+      { ...candidate, coins: candidate.coins + reward },
+      game,
+      {
+        tilePosition: pending.tilePosition,
+        coinsChange: reward,
+        events: [`Kotak kejutan: mendapatkan ${reward} koin.`],
+        reward: `+${reward} koin`,
+      }
+    ));
+    set({
+      game: {
+        ...game,
+        teams: updatedTeams,
+        pendingMysteryBox: {
+          ...pending,
+          status: 'complete',
+          resultMessage: `🎉 ${team.name} mendapatkan ${reward} koin!`,
+        },
+      },
+    });
+    soundManager.playVictory();
+  },
+
+  claimMysteryBoxItem: (itemId) => {
+    const game = get().game;
+    const pending = game?.pendingMysteryBox;
+    if (!game || !pending || pending.status !== 'choosing_item') return false;
+
+    const item = game.shopItems.find(candidate =>
+      candidate.id === itemId
+      && candidate.price === 100
+      && candidate.isEnabled
+      && candidate.currentStock > 0
+    );
+    const team = game.teams.find(candidate => candidate.id === pending.teamId);
+    if (!item || !team) return false;
+
+    const updatedInventory = team.inventory.some(inventoryItem => inventoryItem.itemId === item.id)
+      ? team.inventory.map(inventoryItem => inventoryItem.itemId === item.id
+        ? { ...inventoryItem, quantity: inventoryItem.quantity + 1 }
+        : inventoryItem)
+      : [...team.inventory, { id: uuidv4(), itemId: item.id, item, quantity: 1, usedCount: 0 }];
+    const updatedTeams = game.teams.map(candidate => candidate.id !== team.id ? candidate : addTeamHistory(
+      { ...candidate, inventory: updatedInventory },
+      game,
+      {
+        tilePosition: pending.tilePosition,
+        events: [`Kotak kejutan: mendapatkan ${item.name} gratis.`],
+        reward: `${item.name} gratis`,
+      }
+    ));
+
+    set({
+      game: {
+        ...game,
+        teams: updatedTeams,
+        shopItems: game.shopItems.map(candidate => candidate.id === item.id
+          ? { ...candidate, currentStock: candidate.currentStock - 1 }
+          : candidate),
+        pendingMysteryBox: {
+          ...pending,
+          status: 'complete',
+          resultMessage: `🎁 ${team.name} mendapatkan ${item.name} gratis!`,
+        },
+      },
+    });
+    soundManager.playCoin();
+    return true;
+  },
+
+  stealMysteryBoxReward: (targetTeamId) => {
+    const game = get().game;
+    const pending = game?.pendingMysteryBox;
+    if (!game || !pending || pending.status !== 'choosing_target' || targetTeamId === pending.teamId) return false;
+
+    const receiver = game.teams.find(candidate => candidate.id === pending.teamId);
+    const target = game.teams.find(candidate => candidate.id === targetTeamId);
+    if (!receiver || !target) return false;
+
+    const stolenCoins = Math.min(100, target.coins);
+    const stolenPoints = Math.min(100, target.score);
+    const updatedTeams = game.teams.map(candidate => {
+      if (candidate.id === receiver.id) {
+        return addTeamHistory(
+          { ...candidate, coins: candidate.coins + stolenCoins, score: candidate.score + stolenPoints },
+          game,
+          {
+            tilePosition: pending.tilePosition,
+            coinsChange: stolenCoins,
+            events: [`Kotak kejutan: mencuri ${stolenCoins} koin dan ${stolenPoints} poin dari ${target.name}.`],
+            reward: `+${stolenCoins} koin, +${stolenPoints} poin`,
+          }
+        );
+      }
+      if (candidate.id === target.id) {
+        return addTeamHistory(
+          { ...candidate, coins: candidate.coins - stolenCoins, score: candidate.score - stolenPoints },
+          game,
+          {
+            tilePosition: pending.tilePosition,
+            coinsChange: -stolenCoins,
+            events: [`Kotak kejutan: kehilangan ${stolenCoins} koin dan ${stolenPoints} poin kepada ${receiver.name}.`],
+          }
+        );
+      }
+      return candidate;
+    });
+
+    set({
+      game: {
+        ...game,
+        teams: updatedTeams,
+        pendingMysteryBox: {
+          ...pending,
+          status: 'complete',
+          resultMessage: `🏆 ${receiver.name} mencuri ${stolenCoins} koin dan ${stolenPoints} poin dari ${target.name}!`,
+        },
+      },
+    });
+    soundManager.playVictory();
+    return true;
+  },
+
+  claimFreeShopTileItem: (itemId) => {
+    const game = get().game;
+    const pending = game?.pendingShopTile;
+    if (!game || !pending || !pending.freePurchaseAvailable) return false;
+
+    const item = game.shopItems.find(candidate =>
+      candidate.id === itemId
+      && candidate.price === 100
+      && candidate.isEnabled
+      && candidate.currentStock > 0
+    );
+    const team = game.teams.find(candidate => candidate.id === pending.teamId);
+    if (!item || !team) return false;
+
+    const updatedInventory = team.inventory.some(inventoryItem => inventoryItem.itemId === item.id)
+      ? team.inventory.map(inventoryItem => inventoryItem.itemId === item.id
+        ? { ...inventoryItem, quantity: inventoryItem.quantity + 1 }
+        : inventoryItem)
+      : [...team.inventory, { id: uuidv4(), itemId: item.id, item, quantity: 1, usedCount: 0 }];
+    const updatedTeams = game.teams.map(candidate => candidate.id !== team.id ? candidate : addTeamHistory(
+      { ...candidate, inventory: updatedInventory },
+      game,
+      {
+        tilePosition: pending.tilePosition,
+        events: [`Kotak Toko: mendapatkan ${item.name} gratis.`],
+        reward: `${item.name} gratis`,
+      }
+    ));
+
+    set({
+      game: {
+        ...game,
+        teams: updatedTeams,
+        shopItems: game.shopItems.map(candidate => candidate.id === item.id
+          ? { ...candidate, currentStock: candidate.currentStock - 1 }
+          : candidate),
+        pendingShopTile: { ...pending, freePurchaseAvailable: false },
+      },
+    });
+    soundManager.playCoin();
+    get().addNotification({
+      type: 'success',
+      title: '🎁 Item Gratis!',
+      message: `${team.name} mendapatkan ${item.name} tanpa membayar koin.`,
+      emoji: item.emoji,
+    });
+    return true;
+  },
+
+  finishMysteryBox: () => {
+    const game = get().game;
+    if (!game?.pendingMysteryBox || game.pendingMysteryBox.status !== 'complete') return;
+    set({ game: { ...game, pendingMysteryBox: undefined } });
+    get().endTurn();
   },
 
   endTurn: () => {
@@ -1485,7 +2027,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           const latestTeam = latestGame?.teams.find(t => t.id === teamId);
           if (!latestGame || !latestTeam) return false;
 
-          // Perisai Langkah dipasangkan ke kelompok target pilihan pemakai.
+          // Jebakan Langkah dipasangkan ke kelompok target pilihan pemakai.
           if (item.id === 'step_shield') {
             if (!targetTeam) return false;
             const existingTargetEffect = targetTeam.activeEffects.find(
@@ -1510,7 +2052,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             get().adjustTeamEffects(targetTeam.id, targetEffects);
             get().addNotification({
               type: 'success',
-              title: `${item.emoji} Perisai Langkah Terpasang!`,
+              title: `${item.emoji} Jebakan Langkah Terpasang!`,
               message: `${targetTeam.name} menjadi target: saat menjawab benar, ${targetTeam.name} tidak maju dan poin & koin hangus.`,
               emoji: item.emoji,
             });
@@ -2280,4 +2822,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     );
     set({ game: { ...game, teams: updatedTeams } });
   },
+}), {
+  name: 'quiz-board-adventure-board-settings',
+  partialize: state => ({ savedBoardSettings: state.savedBoardSettings }) as GameStore,
 }));

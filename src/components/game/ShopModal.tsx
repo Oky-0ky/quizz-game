@@ -30,11 +30,12 @@ interface ShopItemCardProps {
   item: ShopItem;
   canAfford: boolean;
   ownedCount: number;
+  isFree?: boolean;
   onBuy: () => void;
   onBuyAndUse?: () => void;
 }
 
-function ShopItemCard({ item, canAfford, ownedCount, onBuy, onBuyAndUse }: ShopItemCardProps) {
+function ShopItemCard({ item, canAfford, ownedCount, isFree = false, onBuy, onBuyAndUse }: ShopItemCardProps) {
   const cat = CATEGORY_LABELS[item.category];
 
   return (
@@ -65,7 +66,7 @@ function ShopItemCard({ item, canAfford, ownedCount, onBuy, onBuyAndUse }: ShopI
         <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 font-bold text-yellow-400">
             <span className="text-base">💰</span>
-            <span className="text-sm font-mono">{item.price} koin</span>
+            <span className="text-sm font-mono">{isFree ? 'GRATIS' : `${item.price} koin`}</span>
           </div>
           <div className="flex items-center gap-2 text-white/50 text-[11px]">
             <span className={item.currentStock <= 0 ? 'text-red-400' : 'text-white/40'}>
@@ -96,7 +97,7 @@ function ShopItemCard({ item, canAfford, ownedCount, onBuy, onBuyAndUse }: ShopI
               : 'bg-gray-800 text-gray-500 cursor-not-allowed border border-white/5'
           }`}
         >
-          {!item.isEnabled ? '🚫 Nonaktif' : item.currentStock <= 0 ? '📦 Stok Habis' : !canAfford ? '💸 Koin Kurang' : '🛒 Beli & Simpan'}
+          {!item.isEnabled ? '🚫 Nonaktif' : item.currentStock <= 0 ? '📦 Stok Habis' : !canAfford ? '💸 Koin Kurang' : isFree ? '🎁 Ambil Gratis' : '🛒 Beli & Simpan'}
         </motion.button>
 
         {canAfford && item.isEnabled && !item.requiresTarget && onBuyAndUse && (
@@ -117,6 +118,7 @@ function ShopItemCard({ item, canAfford, ownedCount, onBuy, onBuyAndUse }: ShopI
 export default function ShopModal({ onClose }: { onClose?: () => void }) {
   const game = useGameStore(s => s.game);
   const buyItem = useGameStore(s => s.buyItem);
+  const claimFreeShopTileItem = useGameStore(s => s.claimFreeShopTileItem);
   const applyItem = useGameStore(s => s.useItem);
   const closeShop = useGameStore(s => s.closeShop);
   const activeShopTeamId = useGameStore(s => s.activeShopTeamId);
@@ -133,6 +135,14 @@ export default function ShopModal({ onClose }: { onClose?: () => void }) {
 
   const currentTeam = game.teams.find(t => t.id === selectedTeamId) || game.teams[game.currentTeamIndex] || game.teams[0];
   const items = game.shopItems.filter(i => activeCategory === 'all' || i.category === activeCategory);
+  const freeShopTile = game.pendingShopTile;
+  const isFreeForCurrentTeam = (item: ShopItem) =>
+    Boolean(
+      freeShopTile
+      && freeShopTile.teamId === currentTeam.id
+      && freeShopTile.freePurchaseAvailable
+      && item.price === 100
+    );
 
   const handleClose = () => {
     closeShop();
@@ -145,6 +155,16 @@ export default function ShopModal({ onClose }: { onClose?: () => void }) {
     if (item.currentStock <= 0) {
       setNotification({ text: `${item.name} sudah habis stoknya!`, emoji: '📦' });
       setTimeout(() => setNotification(null), 2500);
+      return;
+    }
+    if (isFreeForCurrentTeam(item)) {
+      if (!claimFreeShopTileItem(itemId)) {
+        setNotification({ text: 'Item gratis tidak tersedia lagi. Silakan pilih item lain.', emoji: '📦' });
+        setTimeout(() => setNotification(null), 2500);
+        return;
+      }
+      setNotification({ text: `${item.name} ditambahkan ke inventaris tanpa biaya!`, emoji: '🎁' });
+      setTimeout(() => setNotification(null), 2800);
       return;
     }
     if (item.id === 'combined_attack' && currentTeam.score < 1000) {
@@ -210,12 +230,14 @@ export default function ShopModal({ onClose }: { onClose?: () => void }) {
               <span className="text-white/60 text-xs font-medium mr-1 flex-shrink-0">Pembeli:</span>
               {game.teams.map(t => {
                 const isSelected = t.id === currentTeam.id;
+                const isLockedToShopTeam = Boolean(freeShopTile && t.id !== freeShopTile.teamId);
                 return (
                   <button
-                    key={t.id}
-                    onClick={() => setSelectedTeamId(t.id)}
+                  key={t.id}
+                  onClick={() => setSelectedTeamId(t.id)}
+                  disabled={isLockedToShopTeam}
                   title={`Lihat & beli item untuk ${t.name} (${t.coins} koin)`}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0 transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0 transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
                       isSelected
                         ? 'bg-emerald-600 text-white shadow-md border border-emerald-400/50'
                         : 'bg-white/5 hover:bg-white/10 text-white/70 border border-white/5'
@@ -236,6 +258,14 @@ export default function ShopModal({ onClose }: { onClose?: () => void }) {
             </div>
           </div>
         </div>
+
+        {freeShopTile && (
+          <div className="mx-4 mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 md:mx-5">
+            {freeShopTile.freePurchaseAvailable
+              ? 'Kotak Toko: pilih satu item seharga tepat 100 koin secara gratis. Item lain tetap berharga normal.'
+              : 'Kesempatan item gratis sudah digunakan. Kamu masih dapat membeli item dengan harga normal.'}
+          </div>
+        )}
 
         {/* Category filter tabs */}
         <div className="flex gap-2 p-3 md:px-5 border-b border-white/10 bg-gray-900/90 overflow-x-auto flex-shrink-0">
@@ -274,12 +304,14 @@ export default function ShopModal({ onClose }: { onClose?: () => void }) {
             {items.map(item => {
               const invItem = currentTeam.inventory.find(i => i.itemId === item.id);
               const ownedCount = invItem?.quantity || 0;
+              const isFree = isFreeForCurrentTeam(item);
               return (
                 <ShopItemCard
                   key={item.id}
                   item={item}
-                  canAfford={currentTeam.coins >= item.price && item.currentStock > 0 && !(item.id === 'combined_attack' && currentTeam.score < 1000)}
+                  canAfford={(isFree || currentTeam.coins >= item.price) && item.currentStock > 0 && !(item.id === 'combined_attack' && currentTeam.score < 1000)}
                   ownedCount={ownedCount}
+                  isFree={isFree}
                   onBuy={() => handleBuy(item.id, false)}
                   onBuyAndUse={() => handleBuy(item.id, true)}
                 />

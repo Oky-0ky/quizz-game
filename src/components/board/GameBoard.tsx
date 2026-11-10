@@ -8,6 +8,7 @@ import { getBoardDimensions } from '@/utils/boardGenerator';
 import { TILE_CONFIG } from '@/data/gameData';
 import { ADVENTURE_MAP, AdventurePathId, getAdventurePath } from '@/data/adventureMap';
 import AdventureMapView from '@/components/board/AdventureMapView';
+import SpinWheel from '@/components/board/SpinWheel';
 
 const TILE_SIZE = 68;
 const TILE_GAP = 3;
@@ -23,6 +24,7 @@ function getTileClass(type: string): string {
     trap: 'bg-red-200 border-red-400',
     shop: 'bg-emerald-200 border-emerald-400',
     mystery: 'bg-purple-200 border-purple-400',
+    surprise_box: 'bg-purple-200 border-purple-400',
     duel: 'bg-orange-200 border-orange-400',
     shortcut: 'bg-cyan-200 border-cyan-400',
     rest: 'bg-teal-200 border-teal-400',
@@ -39,6 +41,7 @@ function getTileGlow(type: string): string {
     trap: 'shadow-red-400/50',
     shop: 'shadow-emerald-400/50',
     mystery: 'shadow-purple-400/50',
+    surprise_box: 'shadow-purple-400/50',
     duel: 'shadow-orange-400/50',
   };
   return map[type] ? `shadow-md ${map[type]}` : '';
@@ -424,7 +427,7 @@ export default function GameBoard() {
                 </div>
 
                 <div className="absolute -bottom-10 left-0 right-0 flex justify-center gap-3 flex-wrap opacity-80 pointer-events-none">
-                  {(['reward', 'challenge', 'trap', 'shop', 'mystery', 'duel'] as const).map(type => (
+                  {(['reward', 'challenge', 'trap', 'shop', 'mystery', 'surprise_box', 'duel'] as const).map(type => (
                     <div key={type} className="flex items-center gap-1 text-white/90 text-xs bg-black/40 px-2 py-0.5 rounded-md">
                       <div className={`w-3.5 h-3.5 rounded border ${getTileClass(type)}`} />
                       <span>{TILE_CONFIG[type].label}</span>
@@ -453,6 +456,9 @@ export default function GameBoard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {game.pendingMysteryBox && <SpinWheel />}
+
     </div>
   );
 }

@@ -7,6 +7,11 @@ const TILE_HEIGHT = 64;
 const TILE_GAP = 4;
 const COLS = 10;
 
+function normalizeTotalTiles(totalTiles: number): number {
+  if (!Number.isFinite(totalTiles)) return 0;
+  return Math.max(0, Math.floor(totalTiles));
+}
+
 /**
  * Generates a snake-pattern board (like classic board games).
  * Row 0 (bottom) goes left→right, row 1 goes right→left, etc.
@@ -18,15 +23,18 @@ export function generateBoard(
   mapId: BoardMapId = 'adventure',
   pathId: AdventurePathId = 'hutan'
 ): BoardTile[] {
+  const safeTotalTiles = normalizeTotalTiles(totalTiles);
+  if (safeTotalTiles <= 0) return [];
+
   if (mapId === 'adventure') {
-    return generateAdventureBoard(totalTiles, specialPositions, pathId);
+    return generateAdventureBoard(safeTotalTiles, specialPositions, pathId);
   }
 
   const tiles: BoardTile[] = [];
-  const rows = Math.ceil(totalTiles / COLS);
+  const rows = Math.ceil(safeTotalTiles / COLS);
   const step = TILE_WIDTH + TILE_GAP;
 
-  for (let pos = 1; pos <= totalTiles; pos++) {
+  for (let pos = 1; pos <= safeTotalTiles; pos++) {
     const idx = pos - 1; // 0-based index
     const row = Math.floor(idx / COLS); // 0 = bottom row
     const col = idx % COLS;
@@ -72,11 +80,12 @@ function generateAdventureBoard(
   specialPositions: Record<number, TileType>,
   pathId: AdventurePathId
 ): BoardTile[] {
+  const safeTotalTiles = normalizeTotalTiles(totalTiles);
   const path = getAdventurePath(pathId);
-  const points = samplePolyline(path.waypoints, totalTiles);
+  const points = samplePolyline(path.waypoints, safeTotalTiles);
   const tiles: BoardTile[] = [];
 
-  for (let pos = 1; pos <= totalTiles; pos++) {
+  for (let pos = 1; pos <= safeTotalTiles; pos++) {
     const type: TileType = specialPositions[pos] || 'normal';
     const config = TILE_CONFIG[type];
     const point = points[pos - 1] || { x: 0, y: 0 };
@@ -114,6 +123,14 @@ function getDefaultEffect(type: TileType, position: number): BoardTile['effect']
       return { type: 'shortcut_to', targetTile: Math.min(position + 10, 100) };
     case 'duel':
       return { type: 'duel' };
+    case 'surprise_box':
+      return { type: 'surprise_box', wheel: true };
+    case 'big_reward':
+      return { type: 'gain_coins', value: 100 };
+    case 'free_shop':
+      return { type: 'free_shop' };
+    case 'trap_with_penalty':
+      return { type: 'trap_with_penalty', value: 2, penalty: 50 };
     default:
       return undefined;
   }
@@ -124,6 +141,8 @@ export function getTilePixelSize() {
 }
 
 export function getBoardDimensions(totalTiles: number, mapId: BoardMapId = 'classic') {
+  const safeTotalTiles = normalizeTotalTiles(totalTiles);
+
   if (mapId === 'adventure') {
     return {
       width: ADVENTURE_MAP.width,
@@ -132,7 +151,17 @@ export function getBoardDimensions(totalTiles: number, mapId: BoardMapId = 'clas
       cols: 1,
     };
   }
-  const rows = Math.ceil(totalTiles / COLS);
+
+  if (safeTotalTiles <= 0) {
+    return {
+      width: 0,
+      height: 0,
+      rows: 0,
+      cols: 0,
+    };
+  }
+
+  const rows = Math.ceil(safeTotalTiles / COLS);
   const step = TILE_WIDTH + TILE_GAP;
   return {
     width: COLS * step - TILE_GAP,

@@ -12,7 +12,11 @@ export type TileType =
   | 'duel'
   | 'shortcut'
   | 'rest'
-  | 'tax';
+  | 'tax'
+  | 'surprise_box'
+  | 'big_reward'
+  | 'free_shop'
+  | 'trap_with_penalty';
 
 export type QuestionType =
   | 'multiple_choice'
@@ -29,6 +33,8 @@ export type MovementMode = 'fixed' | 'dice' | 'challenge' | 'strategy';
 export type GameMode = 'classic' | 'quiz_race' | 'dice_adventure' | 'strategy_battle' | 'mystery_board' | 'custom';
 export type BoardMapId = 'classic' | 'adventure';
 export type AdventurePathId = 'hutan' | 'sungai' | 'kota';
+export type MysteryBoxPrize = 'coins_100' | 'free_item' | 'coins_200' | 'steal';
+export type MysteryBoxPrizeWeights = Record<MysteryBoxPrize, number>;
 export type GamePhase = 'lobby' | 'setup' | 'playing' | 'paused' | 'question' | 'moving' | 'tile_effect' | 'duel' | 'event' | 'final_challenge' | 'finished';
 export type ItemCategory = 'help' | 'strategy' | 'defense';
 
@@ -59,10 +65,12 @@ export interface BoardTile {
 }
 
 export interface TileEffect {
-  type: 'move_forward' | 'move_backward' | 'gain_coins' | 'lose_coins' | 'gain_item' | 'challenge' | 'duel' | 'protection' | 'tax' | 'shortcut_to';
+  type: 'move_forward' | 'move_backward' | 'gain_coins' | 'lose_coins' | 'gain_item' | 'challenge' | 'duel' | 'protection' | 'tax' | 'shortcut_to' | 'surprise_box' | 'free_shop' | 'trap_with_penalty';
   value?: number;
   targetTile?: number;
   itemId?: string;
+  penalty?: number;
+  wheel?: boolean;
 }
 
 export interface Team {
@@ -141,6 +149,8 @@ export interface ItemEffect {
   points?: number;
   coins?: number;
   targetTeam?: boolean;
+  penalty?: number;
+  wheel?: boolean;
 }
 
 export interface InventoryItem {
@@ -224,6 +234,7 @@ export interface GameSettings {
   boardEnvironment: string;
   boardMapId: BoardMapId;
   adventurePathId: AdventurePathId;
+  mysteryBoxPrizeWeights: MysteryBoxPrizeWeights;
   specialTilePositions: Record<number, TileType>;
   randomEventChance: number;
   movementByDifficulty: {
@@ -260,6 +271,26 @@ export interface GameState {
   turnTimeLeft: number;
   diceResult?: number;
   pendingEffect?: PendingEffect;
+  pendingMysteryBox?: {
+    teamId: string;
+    tilePosition: number;
+    prize: MysteryBoxPrize;
+    status: 'spinning' | 'choosing_item' | 'choosing_target' | 'complete';
+    resultMessage?: string;
+  };
+  pendingShopTile?: {
+    teamId: string;
+    tilePosition: number;
+    freePurchaseAvailable: boolean;
+  };
+  pendingTrapTheft?: {
+    teamId: string;
+    tilePosition: number;
+  };
+  pendingHokiMbg?: {
+    teamId: string;
+    tilePosition: number;
+  };
   questionAnsweredCorrectly?: boolean;
   finalChallengeProgress: Record<string, number>;
   shopItems: ShopItem[];
@@ -401,7 +432,7 @@ export const TEAM_AVATARS = ['🦅', '🐯', '🐺', '🦁', '🐉', '🦊', '�
 export const DEFAULT_SETTINGS: GameSettings = {
   gameMode: 'classic',
   movementMode: 'fixed',
-  totalTiles: 100,
+  totalTiles: 30,
   maxTeams: 4,
   membersPerTeam: 3,
   questionTimeLimit: 30,
@@ -452,6 +483,12 @@ export const DEFAULT_SETTINGS: GameSettings = {
   boardEnvironment: 'mixed',
   boardMapId: 'adventure',
   adventurePathId: 'hutan',
+  mysteryBoxPrizeWeights: {
+    coins_100: 25,
+    free_item: 25,
+    coins_200: 25,
+    steal: 25,
+  },
   specialTilePositions: {
     1: 'start',
     5: 'mystery',
@@ -459,7 +496,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
     11: 'shop',
     14: 'duel',
     17: 'trap',
-    20: 'mystery',
+    20: 'surprise_box',
     23: 'reward',
     26: 'shop',
     29: 'duel',
