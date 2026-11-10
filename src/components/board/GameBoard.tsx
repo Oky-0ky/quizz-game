@@ -6,7 +6,7 @@ import { useGameStore } from '@/store/gameStore';
 import { BoardTile, Team } from '@/types/game';
 import { getBoardDimensions } from '@/utils/boardGenerator';
 import { TILE_CONFIG } from '@/data/gameData';
-import { ADVENTURE_MAP, ADVENTURE_PATHS, AdventurePathId, getAdventurePath } from '@/data/adventureMap';
+import { ADVENTURE_MAP, AdventurePathId, getAdventurePath } from '@/data/adventureMap';
 import AdventureMapView from '@/components/board/AdventureMapView';
 
 const TILE_SIZE = 68;
@@ -323,38 +323,6 @@ export default function GameBoard() {
           )}
         </div>
       </div>
-
-      {/* 3-Lane Race Status Bar */}
-      {isAdventure && (
-        <div className="absolute top-4 left-60 z-30 hidden lg:flex items-center gap-2 bg-black/80 backdrop-blur-md border border-white/20 rounded-2xl px-3 py-2 shadow-xl">
-          {ADVENTURE_PATHS.map((path, idx) => {
-            const assigned = teams.find((t, i) => (t.pathId || ADVENTURE_PATHS[i % ADVENTURE_PATHS.length].id) === path.id);
-            const isTurn = currentTeam && (currentTeam.pathId || ADVENTURE_PATHS[game.currentTeamIndex % ADVENTURE_PATHS.length].id) === path.id;
-            return (
-              <div
-                key={path.id}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all ${
-                  isTurn
-                    ? 'bg-amber-500/20 border border-amber-400 text-amber-300 shadow-md ring-2 ring-amber-400/30'
-                    : 'bg-white/5 border border-white/10 text-white/80'
-                }`}
-              >
-                <span>{path.emoji}</span>
-                <span className="font-bold text-white/50">Jalur {idx + 1}:</span>
-                <span className="font-bold" style={{ color: assigned?.color || '#fff' }}>
-                  {assigned ? `${assigned.avatarEmoji} ${assigned.name}` : path.name}
-                </span>
-                {assigned && (
-                  <span className="bg-white/15 px-1.5 py-0.5 rounded font-mono text-[11px] text-yellow-300 font-bold ml-1">
-                    #{assigned.position}
-                  </span>
-                )}
-                {isTurn && <span className="text-yellow-400 text-[10px] animate-pulse ml-0.5">▶</span>}
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Board drag container */}
       <div

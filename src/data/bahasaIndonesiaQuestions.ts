@@ -4,8 +4,8 @@ import type { Question } from '@/types/game';
  * BANK SOAL BAHASA INDONESIA (100 SOAL)
  *
  * Sumber: Bahasa_Indonesia.py
- * - Soal 1-70  : Pilihan ganda (BAB 1-4)
- * - Soal 71-100: Essay / isian singkat (kunci jawaban disimpan pada correctAnswer & explanation)
+ * - Soal 1-100 : Pilihan ganda (BAB 1-4, termasuk soal 71-100 yang awalnya essay
+ *   telah diubah menjadi pilihan ganda sesuai Bahasa_Indonesia.py)
  *
  * Tingkat kesulitan dipetakan: MUDAH -> easy, SEDANG -> medium,
  * SULIT -> hard, SANGAT SULIT -> very_hard.
@@ -774,221 +774,382 @@ const RAW_QUESTIONS: RawQuestion[] = [
     kunci: 'B. Simile - Wajahnya cerah bagaikan rembulan di malam hari.',
   },
 
-  // ===== BAGIAN II: SOAL ESSAY / ISIAN SINGKAT (71-100) =====
+  // ===== BAGIAN II: SOAL ESSAY YANG DIUBAH MENJADI PILIHAN GANDA (71-100) =====
   // TEKS DESKRIPSI DAN EKSPLANASI (71-78)
   {
     no: 71,
-    soal: 'Jelaskan secara singkat perbedaan fokus utama antara teks deskripsi dan teks eksplanasi!',
+    soal: 'Manakah pernyataan yang paling tepat membedakan fokus utama antara teks deskripsi dan teks eksplanasi?',
+    pilihan: [
+      'A. Deskripsi berfokus pada gambaran fisik/suasana objek, sedangkan eksplanasi berfokus pada urutan kronologis fiksi',
+      'B. Deskripsi berfokus pada gambaran fisik atau suasana suatu objek, sedangkan eksplanasi berfokus pada proses sebab-akibat terjadinya fenomena',
+      'C. Deskripsi bertujuan membujuk pembaca, sedangkan eksplanasi menceritakan mitos zaman dahulu',
+      'D. Deskripsi memuat fakta ilmiah sains, sedangkan eksplanasi memuat opini pribadi penulis',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Teks deskripsi berfokus pada penggambaran fisik, ciri visual, atau suasana suatu objek/tempat, sedangkan teks eksplanasi berfokus pada penjelasan proses dan mekanisme sebab-akibat terjadinya suatu fenomena alam atau sosial.',
+    kunci:
+      'B. Deskripsi berfokus pada gambaran fisik atau suasana suatu objek, sedangkan eksplanasi berfokus pada proses sebab-akibat terjadinya fenomena',
   },
   {
     no: 72,
-    soal: 'Sebutkan 3 cerapan pancaindra yang umum digunakan untuk menyusun paragraf deskripsi lingkungan!',
+    soal: 'Tiga cerapan pancaindra yang umum digunakan dalam penyusunan teks deskripsi lingkungan sekitar adalah...',
+    pilihan: [
+      'A. Penglihatan, pendengaran, dan penciuman',
+      'B. Pengecap, kalkulasi, dan penglihatan',
+      'C. Peraba, ingatan, dan emosi',
+      'D. Kognitif, afektif, dan psikomotorik',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      '1) Cerapan Penglihatan (melihat warna/bentuk), 2) Cerapan Pendengaran (mendengar suara/bunyi), dan 3) Cerapan Penciuman (menghirup aroma/bau).',
+    kunci: 'A. Penglihatan, pendengaran, dan penciuman',
   },
   {
     no: 73,
-    soal: 'Tuliskan struktur umum yang membangun teks eksplanasi secara berurutan!',
+    soal: 'Struktur baku penyusun teks eksplanasi secara urut dan lengkap terdiri dari...',
+    pilihan: [
+      'A. Orientasi - Komplikasi - Resolusi',
+      'B. Identifikasi - Deskripsi Bagian - Simpulan',
+      'C. Pernyataan Umum - Deretan Penjelas - Interpretasi',
+      'D. Tesis - Pembuktian - Reorientasi',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      '1) Pernyataan Umum (Identifikasi Fenomena), 2) Deretan Penjelas (Proses Sebab-Akibat), dan 3) Interpretasi (Simpulan/Ulasan Penulis).',
+    kunci: 'C. Pernyataan Umum - Deretan Penjelas - Interpretasi',
   },
   {
     no: 74,
-    soal: 'Berikan 1 contoh paragraf deskripsi singkat (2-3 kalimat) tentang kondisi kebersihan ruang kelasmu!',
+    soal: "Bacalah paragraf: 'Ruang kelas kami sangat bersih dan tertata rapi. Lantai keramik putihnya berkilau tanpa ada sebutir debu. Meja berjejer teratur diiringi aroma harum pembersih lantai.' Paragraf tersebut termasuk jenis teks...",
+    pilihan: [
+      'A. Eksplanasi kausalitas',
+      'B. Deskripsi ruangan/spasial',
+      'C. Narasi sugestif',
+      'D. Eksposisi argumentatif',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Ruang kelas kami sangat bersih dan tertata rapi. Lantai keramik putihnya berkilau tanpa ada sebutir debu maupun sampah berserakan. Meja dan kursi berjejer teratur diiringi aroma harum pembersih lantai yang menyegarkan.',
+    kunci: 'B. Deskripsi ruangan/spasial',
   },
   {
     no: 75,
-    soal: 'Sebutkan 2 contoh konjungsi kausalitas (sebab-akibat) yang sering digunakan dalam teks eksplanasi!',
+    soal: 'Di bawah ini yang seluruhnya merupakan konjungsi kausalitas (sebab-akibat) yang tepat untuk teks eksplanasi adalah...',
+    pilihan: [
+      'A. Lalu, kemudian, selanjutnya',
+      'B. Karena, sebab, oleh karena itu',
+      'C. Serta, dan, lagipula',
+      'D. Seandainya, bilamana, jika',
+    ],
     tingkat: 'MUDAH',
-    jawaban: "Kata 'karena', 'sebab', 'oleh karena itu', atau 'sehingga'.",
+    kunci: 'B. Karena, sebab, oleh karena itu',
   },
   {
     no: 76,
-    soal: 'Mengapa teks eksplanasi harus didasarkan pada data faktual dan kebenaran ilmiah?',
+    soal: 'Mengapa teks eksplanasi wajib berlandaskan pada data faktual dan kebenaran ilmiah?',
+    pilihan: [
+      'A. Agar teks disukai oleh pembaca cerita fiksi',
+      'B. Karena bertujuan menyampaikan pengetahuan nyata tentang fenomena yang dapat dipertanggungjawabkan',
+      'C. Agar dapat dimasukkan ke dalam buku puisi',
+      'D. Agar penulis dapat mengekspresikan imajinasinya secara bebas',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Karena teks eksplanasi bertujuan menyajikan informasi ilmu pengetahuan yang dapat dipertanggungjawabkan kebenarannya, bukan rekaan imajinasi semata.',
+    kunci:
+      'B. Karena bertujuan menyampaikan pengetahuan nyata tentang fenomena yang dapat dipertanggungjawabkan',
   },
   {
     no: 77,
-    soal: "Ubahlah kalimat deskriptif berikut menjadi kalimat eksplanasi sebab-akibat: 'Sungai di desa kami penuh sampah dan baunya sangat busuk.'",
+    soal: "Manakah di bawah ini yang merupakan ubahan kalimat 'Sungai di desa kami penuh sampah dan baunya busuk' menjadi kalimat eksplanasi kausalitas yang tepat?",
+    pilihan: [
+      'A. Sungai desa kami terlihat sangat hitam dan dikelilingi sampah plastik yang menumpuk.',
+      'B. Penumpukan sampah secara terus-menerus memicu pembusukan zat cair, sehingga menimbulkan aroma busuk dan mencemari air sungai.',
+      'C. Budi melemparkan kantong sampah ke sungai sambil tertawa.',
+      'D. Alangkah indahnya jika sungai di desa kami tidak penuh dengan sampah busuk.',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Penumpukan sampah organik dan anorganik secara terus-menerus di dasar sungai memicu pembusukan zat cair, sehingga menimbulkan aroma busuk menyengat dan mencemari air sungai.',
+    kunci:
+      'B. Penumpukan sampah secara terus-menerus memicu pembusukan zat cair, sehingga menimbulkan aroma busuk dan mencemari air sungai.',
   },
   {
     no: 78,
-    soal: "Jelaskan apa yang dimaksud dengan bagian 'Interpretasi' pada struktur teks eksplanasi!",
+    soal: "Dalam teks eksplanasi, bagian 'Interpretasi' berfungsi untuk...",
+    pilihan: [
+      'A. Memperkenalkan nama tokoh utama dan wataknya',
+      'B. Menyampaikan kesimpulan, ulasan, atau tanggapan kritis penulis terhadap fenomena yang telah dijelaskan',
+      'C. Menguraikan perincian sebab-akibat secara mendalam',
+      'D. Memberikan gambaran warna dan ukuran fisik objek',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Interpretasi merupakan bagian penutup teks eksplanasi yang berisi intisari, pandangan umum, atau tanggapan kritis penulis mengenai fenomena yang dijelaskan.',
+    kunci:
+      'B. Menyampaikan kesimpulan, ulasan, atau tanggapan kritis penulis terhadap fenomena yang telah dijelaskan',
   },
 
   // KARYA SASTRA FIKSI DAN PUISI (79-86)
   {
     no: 79,
-    soal: 'Apa yang dimaksud dengan karya sastra fiksi? Sebutkan 2 contoh jenisnya!',
+    soal: 'Pasangan jenis karya berikut yang seluruhnya tergolong ke dalam karya sastra fiksi adalah...',
+    pilihan: [
+      'A. Cerpen dan Novel',
+      'B. Biografi dan Jurnal Ilmiah',
+      'C. Teks Berita dan Laporan Hasil Observasi',
+      'D. Makalah dan Artikel Ilmiah',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Karya sastra fiksi adalah cerita rekaan atau imajinasi pengarang yang tidak bersifat fakta sejarah riil. Contohnya: Cerpen dan Novel (atau Fabel/Legenda).',
+    kunci: 'A. Cerpen dan Novel',
   },
   {
     no: 80,
-    soal: 'Sebutkan 5 unsur intrinsik yang wajib ada dalam sebuah cerita fiksi (novel/cerpen)!',
+    soal: 'Lima unsur intrinsik yang wajib ada dalam cerita fiksi (novel/cerpen) adalah...',
+    pilihan: [
+      'A. Diksi, rima, bait, majas, dan tipografi',
+      'B. Tema, tokoh/penokohan, latar, alur, dan amanat',
+      'C. Pernyataan umum, deretan penjelas, koda, tesis, dan orientasi',
+      'D. Judul, penerbit, tahun terbit, tebal halaman, dan harga buku',
+    ],
     tingkat: 'SEDANG',
-    jawaban: '1) Tema, 2) Tokoh/Penokohan, 3) Alur (Plot), 4) Latar (Setting), dan 5) Amanat (Pesan).',
+    kunci: 'B. Tema, tokoh/penokohan, latar, alur, dan amanat',
   },
   {
     no: 81,
-    soal: 'Jelaskan perbedaan antara tokoh utama (protagonis) dan tokoh penentang (antagonis)!',
+    soal: 'Perbedaan mendasar antara tokoh protagonis dan tokoh antagonis dalam fiksi adalah...',
+    pilihan: [
+      'A. Protagonis membawa watak baik/pembawa cerita utama, sedangkan antagonis adalah penentang yang memicu konflik',
+      'B. Protagonis berwatak jahat, sedangkan antagonis berwatak netral',
+      'C. Protagonis muncul sekali, sedangkan antagonis muncul di setiap halaman',
+      'D. Protagonis berwujud hewan, sedangkan antagonis selalu berwujud manusia',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Tokoh protagonis adalah tokoh utama pembawa nilai kebaikan/pembawa cerita, sedangkan tokoh antagonis adalah tokoh pembawa penentangan/penjahat yang memicu konflik.',
+    kunci:
+      'A. Protagonis membawa watak baik/pembawa cerita utama, sedangkan antagonis adalah penentang yang memicu konflik',
   },
   {
     no: 82,
-    soal: 'Tuliskan satu bait puisi singkat (4 baris) bertema kecintaan terhadap kebersihan sungai di lingkunganmu!',
+    soal: "Perhatikan bait puisi berikut:\n'Air jernih mengalir tenang,\nMenyapa batu di tepi kali.\nHati gembira memandang terang,\nSungai bersih dijaga berseri.'\nBait puisi di atas bertemakan...",
+    pilihan: [
+      'A. Keindahan dan kecintaan pada kebersihan sungai',
+      'B. Bencana banjir bandang menerjang desa',
+      'C. Penyesalan manusia merusak pepohonan',
+      'D. Perjuangan mencari ikan di laut',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Air jernih mengalir tenang,\nMenyapa batu di tepi kali.\nHati gembira memandang terang,\nSungai bersih dijaga berseri.',
+    kunci: 'A. Keindahan dan kecintaan pada kebersihan sungai',
   },
   {
     no: 83,
-    soal: 'Apa perbedaan mendasar antara dongeng Fabel dan Legenda?',
+    soal: 'Perbedaan mendasar antara cerita rakyat Fabel dan Legenda terletak pada...',
+    pilihan: [
+      'A. Fabel menokohkan hewan berprilaku seperti manusia, sedangkan legenda menceritakan asal-usul tempat',
+      'B. Fabel berisi fakta sejarah, sedangkan legenda berupa puisi singkat',
+      'C. Fabel dituis dalam bentuk drama, sedangkan legenda ditulis dalam bentuk berita',
+      'D. Fabel tidak ber-amanat, sedangkan legenda dipenuhi rumus matematika',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Fabel adalah cerita fiksi yang seluruh tokohnya berupa hewan yang berprilaku seperti manusia, sedangkan Legenda adalah cerita rakyat yang mengisahkan tentang asal-usul terbentuknya suatu tempat atau alam.',
+    kunci:
+      'A. Fabel menokohkan hewan berprilaku seperti manusia, sedangkan legenda menceritakan asal-usul tempat',
   },
   {
     no: 84,
-    soal: 'Jelaskan perbedaan antara Alur Maju dan Alur Mundur dalam karya fiksi!',
+    soal: 'Alur cerita fiksi yang menguraikan peristiwa secara kronologis dari masa kini menuju masa depan disebut alur maju, sedangkan alur mundur (flashback) adalah...',
+    pilihan: [
+      'A. Cerita yang meloncat-loncat tanpa arah',
+      'B. Cerita yang diawali dari kondisi masa kini lalu kembali mengenang peristiwa masa lalu',
+      'C. Cerita yang tidak pernah selesai',
+      'D. Cerita yang hanya berisi dialog tokoh',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Alur maju menceritakan peristiwa secara runtut berurutan dari masa kini menuju masa depan, sedangkan alur mundur (flashback) menceritakan peristiwa dari masa kini lalu kembali mengenang masa lalu.',
+    kunci:
+      'B. Cerita yang diawali dari kondisi masa kini lalu kembali mengenang peristiwa masa lalu',
   },
   {
     no: 85,
-    soal: 'Mengapa pemilihan diksi yang tepat sangat penting dalam proses penulisan puisi lingkungan?',
+    soal: 'Mengapa pemilihan diksi yang cermat sangat penting dalam penulisan puisi lingkungan sekitar?',
+    pilihan: [
+      'A. Agar jumlah kata dalam puisi menjadi sangat banyak',
+      'B. Membantu menciptakan citraan estetik yang kuat dan mengetuk perasaan emosional pembaca tentang alam',
+      'C. Menjaga agar puisi dapat dibaca dengan cepat tanpa jeda',
+      'D. Menghindari pembaca dari pemahaman isi puisi',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Pemilihan diksi yang tepat dapat menciptakan citraan estetik yang kuat, mempertegas pesan keindahan/kerusakan alam, serta mengetuk emosi batin pembaca secara mendalam.',
+    kunci:
+      'B. Membantu menciptakan citraan estetik yang kuat dan mengetuk perasaan emosional pembaca tentang alam',
   },
   {
     no: 86,
-    soal: "Jelaskan fungsi 'Amanat' bagi pembaca sebuah cerita fiksi!",
+    soal: "Fungsi utama dari unsur 'Amanat' bagi pembaca cerita fiksi adalah...",
+    pilihan: [
+      'A. Memberikan petunjuk alamat tempat pengarang tinggal',
+      'B. Menyampaikan pesan moral dan keteladanan positif yang dapat dipetik dalam kehidupan',
+      'C. Menjelaskan rincian biaya penerbitan buku',
+      'D. Memberikan kritik atas tata bahasa cerita',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Amanat berfungsi memberikan pelajaran hidup, nasihat moral, dan nilai keteladanan yang dapat dipetik serta diterapkan pembaca dalam kehidupan sehari-hari.',
+    kunci:
+      'B. Menyampaikan pesan moral dan keteladanan positif yang dapat dipetik dalam kehidupan',
   },
 
   // TEKS NARASI (87-92)
   {
     no: 87,
-    soal: 'Jelaskan pengertian dari teks narasi!',
+    soal: 'Teks narasi secara mendasar didefinisikan sebagai...',
+    pilihan: [
+      'A. Teks yang berisi lukisan fisik suatu benda secara mendalam',
+      'B. Teks yang menceritakan urutan peristiwa/kejadian secara kronologis dari waktu ke waktu',
+      'C. Teks yang memuat argumen pembuktian hukum alam',
+      'D. Teks karangan iklan produk',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Teks narasi adalah teks yang menceritakan urutan peristiwa atau kejadian secara kronologis dari waktu ke waktu, baik bersifat fiksi maupun fakta.',
+    kunci:
+      'B. Teks yang menceritakan urutan peristiwa/kejadian secara kronologis dari waktu ke waktu',
   },
   {
     no: 88,
-    soal: 'Sebutkan struktur teks narasi secara runtut dari tahap awal hingga akhir!',
+    soal: 'Struktur baku teks narasi dari tahap awal hingga penutup secara runtut adalah...',
+    pilihan: [
+      'A. Orientasi - Komplikasi - Resolusi - Koda',
+      'B. Pernyataan umum - Deretan penjelas - Interpretasi',
+      'C. Identifikasi - Deskripsi bagian - Kesimpulan',
+      'D. Pembuka - Isi - Penutup',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      '1) Orientasi (Pengenalan), 2) Komplikasi (Kemunculan Konflik), 3) Resolusi (Penyelesaian Masalah), dan 4) Koda (Penutup/Moral).',
+    kunci: 'A. Orientasi - Komplikasi - Resolusi - Koda',
   },
   {
     no: 89,
-    soal: "Apa yang terjadi pada bagian 'Komplikasi' dalam sebuah struktur teks narasi?",
+    soal: "Peristiwa utama yang terjadi pada bagian 'Komplikasi' dalam teks narasi adalah...",
+    pilihan: [
+      'A. Pengenalan latar dan nama-nama tokoh',
+      'B. Munculnya masalah, perselisihan, atau konflik hingga mencapai klimaks',
+      'C. Penyelesaian atas semua konflik yang dihadapi tokoh',
+      'D. Penjelasan amanat eksplisit penulis',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Pada bagian komplikasi, muncul rintangan, permasalahan, pertentangan antar-tokoh hingga mencapai titik ketegangan tertinggi (klimaks).',
+    kunci: 'B. Munculnya masalah, perselisihan, atau konflik hingga mencapai klimaks',
   },
   {
     no: 90,
-    soal: 'Jelaskan perbedaan antara sudut pandang orang pertama dan sudut pandang orang ketiga!',
+    soal: "Sudut pandang orang pertama dalam narasi ditandai dengan penggunaan kata ganti 'Aku/Saya', sedangkan sudut pandang orang ketiga ditandai dengan kata ganti...",
+    pilihan: [
+      'A. Kamu / Kalian',
+      'B. Dia / Mereka / Nama Tokoh',
+      'C. Kita / Kami',
+      'D. Saya / Aku',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      "Sudut pandang orang pertama menggunakan kata ganti 'Aku/Saya' (penulis ikut di dalam cerita), sedangkan orang ketiga menggunakan kata ganti 'Dia/Mereka/Nama Tokoh' (penulis di luar cerita).",
+    kunci: 'B. Dia / Mereka / Nama Tokoh',
   },
   {
     no: 91,
-    soal: 'Buatlah 2 kalimat berurutan yang menunjukkan urutan waktu (kronologis) dalam teks narasi!',
+    soal: 'Pasangan kalimat berikut yang memperlihatkan hubungan urutan waktu (kronologis) dalam teks narasi adalah...',
+    pilihan: [
+      'A. Budi merapikan seragamnya. Kemudian, ia bergegas berlari menuju stasiun kereta.',
+      'B. Air laut menguap karena sengatan panas matahari.',
+      'C. Rumah tua itu tampak sepi dan berdebu tebal.',
+      'D. Gunung Bromo berdiri megah di Jawa Timur.',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      'Dito bergegas memakai sepatu lalu berlari menuju gerbang sekolah. Setelah itu, ia segera memasuki ruang kelas sebelum bel masuk berbunyi.',
+    kunci:
+      'A. Budi merapikan seragamnya. Kemudian, ia bergegas berlari menuju stasiun kereta.',
   },
   {
     no: 92,
-    soal: "Mengapa bagian 'Resolusi' penting untuk menutup jalannya cerita narasi?",
+    soal: "Mengapa bagian 'Resolusi' wajib hadir untuk mengakhiri alur cerita narasi?",
+    pilihan: [
+      'A. Agar pengarang dapat menambah jumlah tokoh baru',
+      'B. Memberikan peleraian dan penyelesaian atas konflik yang dialami para tokoh',
+      'C. Mengubah cerita narasi menjadi laporan ilmiah',
+      'D. Memperpanjang ketegangan masalah tanpa batas',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Karena resolusi berfungsi memberikan jawaban, peleraian, dan solusi atas konflik yang dialami para tokoh sehingga cerita mendapatkan kejelasan akhir.',
+    kunci:
+      'B. Memberikan peleraian dan penyelesaian atas konflik yang dialami para tokoh',
   },
 
   // MAJAS DAN MAKNA KATA (93-100)
   {
     no: 93,
-    soal: 'Jelaskan perbedaan antara makna Denotatif dan makna Konotatif!',
+    soal: 'Perbedaan mendasar makna Denotatif dan makna Konotatif adalah...',
+    pilihan: [
+      'A. Denotatif bermakna lugas/sebenarnya sesuai kamus, konotatif bermakna kiasan/tersirat',
+      'B. Denotatif bermakna kiasan, konotatif bermakna sebenarnya',
+      'C. Denotatif digunakan dalam puisi, konotatif dalam rumus kimia',
+      'D. Denotatif bernilai negatif, konotatif bernilai positif',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Makna denotatif adalah makna kata yang sebenarnya, lugas, dan sesuai dengan kamus (Kamus Besar Bahasa Indonesia), sedangkan makna konotatif adalah makna kiasan, tersirat, atau mempunyai perasaan tambahan.',
+    kunci:
+      'A. Denotatif bermakna lugas/sebenarnya sesuai kamus, konotatif bermakna kiasan/tersirat',
   },
   {
     no: 94,
-    soal: 'Apa yang dimaksud dengan majas Personifikasi? Berikan 1 contoh kalimatnya!',
+    soal: 'Kalimat berikut yang mengandung majas Personifikasi adalah...',
+    pilihan: [
+      'A. Ombak berkejar-kejaran menghantam karang di tepi pantai.',
+      'B. Hatinya hancur berkeping-keping menjadi seribu bagian.',
+      'C. Wajahnya bersinar seperti rembulan malam.',
+      'D. Mampirlah ke gubuk reot kami ini.',
+    ],
     tingkat: 'SEDANG',
-    jawaban:
-      "Majas personifikasi adalah gaya bahasa yang menganggap benda mati dapat berprilaku seperti manusia. Contoh: 'Ombak berkejar-kejaran di tepi pantai.'",
+    kunci: 'A. Ombak berkejar-kejaran menghantam karang di tepi pantai.',
   },
   {
     no: 95,
-    soal: 'Tuliskan 1 contoh kalimat bermajas Hiperbola yang menggambarkan cuaca panas!',
+    soal: 'Kalimat berikut yang merupakan contoh majas Hiperbola tentang kondisi cuaca panas adalah...',
+    pilihan: [
+      'A. Sinar matahari siang ini begitu terik membakar dan memanggang kulit hingga mendidih.',
+      'B. Hari ini udara cukup hangat seperti biasanya.',
+      'C. Matahari menyapa kita dengan senyuman ramah.',
+      'D. Dingin sekali udara di siang hari ini.',
+    ],
     tingkat: 'MUDAH',
-    jawaban:
-      'Sinar matahari siang ini begitu terik sampai-sampai membakar dan memanggang kulitku hingga mendidih.',
+    kunci:
+      'A. Sinar matahari siang ini begitu terik membakar dan memanggang kulit hingga mendidih.',
   },
   {
     no: 96,
-    soal: "Buatlah kalimat yang menggunakan majas Simile menggunakan kata pembanding 'bagaikan'!",
+    soal: "Kalimat 'Wajah gadis itu sangat bersih dan berseri-seri bagaikan bulan purnama' menggunakan majas...",
+    pilihan: ['A. Metafora', 'B. Simile', 'C. Litotes', 'D. Sarkasme'],
     tingkat: 'SEDANG',
-    jawaban: 'Wajah gadis itu sangat bersih dan berseri-seri bagaikan bulan purnama di malam hari.',
+    kunci: 'B. Simile',
   },
   {
     no: 97,
-    soal: 'Jelaskan perbedaan fungsi antara majas Ironi dan majas Litotes!',
+    soal: 'Perbedaan fungsi antara majas Ironi dan majas Litotes yang paling tepat adalah...',
+    pilihan: [
+      'A. Ironi berfungsi menyindir orang lain secara halus dengan kata bertolak belakang, sedangkan Litotes merendahkan diri sendiri secara sopan',
+      'B. Ironi merendahkan diri sendiri, sedangkan litotes menyindir musuh',
+      'C. Ironi membandingkan hewan, sedangkan litotes membandingkan manusia',
+      'D. Ironi bermakna denotatif, sedangkan litotes bermakna ilmiah',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Majas Ironi berfungsi menyindir orang lain secara halus dengan kata bertolak belakang, sedangkan majas Litotes berfungsi merendahkan diri sendiri untuk menghormati lawan bicara.',
+    kunci:
+      'A. Ironi berfungsi menyindir orang lain secara halus dengan kata bertolak belakang, sedangkan Litotes merendahkan diri sendiri secara sopan',
   },
   {
     no: 98,
-    soal: "Tentukan majas yang terdapat pada kalimat: 'Peluru kendali itu menyambar tubuh musuh dengan sangat cepat.'",
+    soal: "Tentukan majas yang terkandung dalam kalimat: 'Peluru kendali itu menyambar tubuh musuh dengan sangat cepat.'",
+    pilihan: ['A. Metafora', 'B. Personifikasi', 'C. Litotes', 'D. Ironi'],
     tingkat: 'SEDANG',
-    jawaban:
-      "Majas Personifikasi (kata 'menyambar' merupakan tindakan bernyawa yang dikenakan pada peluru kendali).",
+    kunci: 'B. Personifikasi',
   },
   {
     no: 99,
-    soal: "Tuliskan 2 kalimat yang masing-masing menggunakan kata 'berdarah' secara Denotatif dan Konotatif!",
+    soal: "Manakah pasangan kalimat di bawah ini yang menggunakan kata 'berdarah' secara Denotatif (1) dan Konotatif (2)?",
+    pilihan: [
+      'A. (1) Kaki Budi berdarah terkena kaca. (2) Para pejuang berdarah-darah merebut kemerdekaan.',
+      'B. (1) Bajunya berdarah terkena sirup. (2) Lukanya berdarah.',
+      'C. (1) Pejuang berdarah-darah di medan perang. (2) Kaki Budi berdarah.',
+      'D. (1) Daging ini berdarah. (2) Ikan itu berdarah.',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      '1) Denotatif: Kaki Budi berdarah karena terkena pecahan kaca.\n2) Konotatif: Para pahlawan berjuang hingga titik darah penghabisan demi merebut kemerdekaan (berdarah-darah = berjuang keras).',
+    kunci:
+      'A. (1) Kaki Budi berdarah terkena kaca. (2) Para pejuang berdarah-darah merebut kemerdekaan.',
   },
   {
     no: 100,
-    soal: 'Mengapa majas Sarkasme sebaiknya dihindari dalam komunikasi sehari-hari meskipun sering digunakan dalam sastra?',
+    soal: 'Mengapa penggunaan majas Sarkasme sebaiknya dihindari dalam komunikasi sehari-hari?',
+    pilihan: [
+      'A. Karena mengandung bahasa kiasan yang sulit dipahami',
+      'B. Karena bersifat sangat pedas dan kasar sehingga dapat melukai perasaan lawan bicara',
+      'C. Karena majas sarkasme membuat kalimat menjadi terlalu panjang',
+      'D. Karena sarkasme hanya boleh digunakan oleh pejabat',
+    ],
     tingkat: 'SULIT',
-    jawaban:
-      'Karena majas sarkasme berisi sindiran yang sangat pedas, kasar, dan dapat melukai perasaan lawan bicara serta merusak pergaulan sosial.',
+    kunci:
+      'B. Karena bersifat sangat pedas dan kasar sehingga dapat melukai perasaan lawan bicara',
   },
+
 ];
 
 const OPTION_PREFIX = /^[A-E]\.\s*/;

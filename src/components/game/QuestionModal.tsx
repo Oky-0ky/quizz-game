@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, isAnswerCorrect } from '@/store/gameStore';
+import { useQuizMusic } from '@/hooks/useQuizMusic';
 
 export default function QuestionModal() {
   const game = useGameStore(s => s.game);
@@ -24,6 +25,8 @@ export default function QuestionModal() {
   const timeLeftRef = useRef(0);
 
   const question = game?.activeQuestion;
+  // Musik latar "rendem" (acak tiap sesi) aktif selama pertanyaan tampil
+  useQuizMusic({ playing: Boolean(question) });
   const questionKey = game && question
     ? `${game.teams[game.currentTeamIndex]?.id}-${game.currentTurn}-${question.id}-${game.activeQuestionIsBonus ? 'bonus' : 'turn'}`
     : null;

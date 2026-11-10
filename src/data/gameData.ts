@@ -1,6 +1,7 @@
 import { ShopItem, Question, RandomEvent, Mission, SurpriseCard, SubjectId } from '@/types/game';
 import { BAHASA_INDONESIA_QUESTIONS } from '@/data/bahasaIndonesiaQuestions';
 import { PAI_QUESTIONS } from '@/data/paiQuestions';
+import { FIQIH_LOKAL_QUESTIONS } from '@/data/fiqihLokalQuestions';
 
 // ===================== SHOP ITEMS =====================
 export const SHOP_ITEMS: ShopItem[] = [
@@ -1372,6 +1373,9 @@ export const QUESTION_BANK: Question[] = [
 
   // ===== PAI Nasional (100 soal dari pai.py) =====
   ...PAI_QUESTIONS,
+
+  // ===== Fiqih Lokal (100 soal dari fikih ibadah.py) =====
+  ...FIQIH_LOKAL_QUESTIONS,
 ];
 
 export function getQuestionsBySubjects(subjects?: SubjectId[]): Question[] {
