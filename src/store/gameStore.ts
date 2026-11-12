@@ -98,10 +98,38 @@ function normalizeBoardSettings(settings: GameSettings): GameSettings {
   return { ...settings, totalTiles, specialTilePositions };
 }
 
+const DEFAULT_CLASSIC_BOARD_TILES = 100;
+
 type SavedBoardSettings = Pick<
   GameSettings,
   'totalTiles' | 'boardMapId' | 'adventurePathId' | 'specialTilePositions'
 >;
+
+function migrateSavedBoardSettings(settings: SavedBoardSettings): SavedBoardSettings {
+  if (settings.boardMapId !== 'classic' || settings.totalTiles !== 30) return settings;
+
+  const specialTilePositions: SavedBoardSettings['specialTilePositions'] = {};
+  for (const [position, type] of Object.entries(settings.specialTilePositions)) {
+    const tilePosition = Number(position);
+    if (
+      Number.isInteger(tilePosition) &&
+      tilePosition > 1 &&
+      tilePosition < DEFAULT_CLASSIC_BOARD_TILES &&
+      type !== 'start' &&
+      type !== 'finish'
+    ) {
+      specialTilePositions[tilePosition] = type;
+    }
+  }
+  specialTilePositions[1] = 'start';
+  specialTilePositions[DEFAULT_CLASSIC_BOARD_TILES] = 'finish';
+
+  return {
+    ...settings,
+    totalTiles: DEFAULT_CLASSIC_BOARD_TILES,
+    specialTilePositions,
+  };
+}
 
 function getSavedBoardSettings(settings: GameSettings): SavedBoardSettings {
   return {
@@ -322,10 +350,17 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   closeCardModal: () => set({ activeCardDrawn: null }),
 
   startNewGame: (name, teamsData, customSettings) => {
+    const savedBoardSettings = get().savedBoardSettings;
+    const selectedMap = customSettings?.boardMapId ?? savedBoardSettings.boardMapId;
+    const shouldUseClassicDefault =
+      selectedMap === 'classic' &&
+      savedBoardSettings.boardMapId === 'adventure' &&
+      customSettings?.totalTiles === undefined;
     const settings = normalizeBoardSettings({
       ...DEFAULT_SETTINGS,
-      ...get().savedBoardSettings,
+      ...savedBoardSettings,
       ...customSettings,
+      ...(shouldUseClassicDefault ? { totalTiles: DEFAULT_CLASSIC_BOARD_TILES } : {}),
     });
     const board = generateBoard(
       settings.totalTiles,
@@ -379,28 +414,29 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   },
 
   createGame: (name: string) => {
+    const settings = normalizeBoardSettings(DEFAULT_SETTINGS);
     const board = generateBoard(
-      DEFAULT_SETTINGS.totalTiles,
-      DEFAULT_SETTINGS.specialTilePositions,
-      DEFAULT_SETTINGS.boardMapId,
-      DEFAULT_SETTINGS.adventurePathId
+      settings.totalTiles,
+      settings.specialTilePositions,
+      settings.boardMapId,
+      settings.adventurePathId
     );
     const newGame: GameState = {
       id: uuidv4(),
       roomCode: generateRoomCode(),
       name,
       phase: 'lobby',
-      settings: { ...DEFAULT_SETTINGS },
+      settings,
       teams: [],
       currentTeamIndex: 0,
       currentTurn: 0,
       board,
       adminId: 'local-admin',
-      turnTimeLeft: DEFAULT_SETTINGS.questionTimeLimit,
+      turnTimeLeft: settings.questionTimeLimit,
       finalChallengeProgress: {},
       shopItems: SHOP_ITEMS.map(item => ({ ...item, currentStock: item.maxStock })),
-      questions: getQuestionsBySubjects(DEFAULT_SETTINGS.subjects),
-      tileQuestionIds: createTileQuestionIds(DEFAULT_SETTINGS.totalTiles),
+      questions: getQuestionsBySubjects(settings.subjects),
+      tileQuestionIds: createTileQuestionIds(settings.totalTiles),
       activeQuestionIsBonus: false,
       randomEvents: RANDOM_EVENTS,
       missions: MISSIONS_DATA,
@@ -473,6 +509,11 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const newSettings = normalizeBoardSettings({
       ...game.settings,
       ...settings,
+      ...(settings.boardMapId === 'classic' &&
+      game.settings.boardMapId === 'adventure' &&
+      settings.totalTiles === undefined
+        ? { totalTiles: DEFAULT_CLASSIC_BOARD_TILES }
+        : {}),
     });
     const board = generateBoard(
       newSettings.totalTiles,
@@ -2825,4 +2866,15 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 }), {
   name: 'quiz-board-adventure-board-settings',
   partialize: state => ({ savedBoardSettings: state.savedBoardSettings }) as GameStore,
+  version: 1,
+  migrate: persistedState => {
+    const persisted = persistedState as Partial<GameStore>;
+    const savedBoardSettings = persisted.savedBoardSettings;
+    return savedBoardSettings
+      ? {
+          ...persisted,
+          savedBoardSettings: migrateSavedBoardSettings(savedBoardSettings),
+        } as GameStore
+      : persisted as GameStore;
+  },
 }));

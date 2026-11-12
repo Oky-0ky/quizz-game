@@ -39,13 +39,14 @@ export type GamePhase = 'lobby' | 'setup' | 'playing' | 'paused' | 'question' | 
 export type ItemCategory = 'help' | 'strategy' | 'defense';
 
 /** Mata pelajaran yang bisa dipilih untuk bank soal */
-export type SubjectId = 'matematika' | 'b_indonesia' | 'pai' | 'fiqih_lokal';
+export type SubjectId = 'matematika' | 'b_indonesia' | 'pai' | 'fiqih_lokal' | 'bahasa_arab';
 
 export const SUBJECTS: { id: SubjectId; name: string; emoji: string; desc: string }[] = [
   { id: 'matematika', name: 'Matematika', emoji: '➗', desc: 'Hitung, aljabar & geometri' },
   { id: 'b_indonesia', name: 'B. Indonesia', emoji: '📖', desc: 'Kosakata, ejaan & sastra' },
   { id: 'pai', name: 'PAI Nasional', emoji: '🕌', desc: 'Akidah, ibadah & Al-Qur\'an' },
   { id: 'fiqih_lokal', name: 'Fiqih Lokal', emoji: '🌙', desc: 'Ibadah: jamak, qashar, Jum\'at & jenazah' },
+  { id: 'bahasa_arab', name: 'Bahasa Arab', emoji: '🔤', desc: 'Kosakata, tata bahasa & kalimat Arab' },
 ];
 
 export const DEFAULT_SUBJECTS: SubjectId[] = SUBJECTS.map(s => s.id);
@@ -432,7 +433,7 @@ export const TEAM_AVATARS = ['🦅', '🐯', '🐺', '🦁', '🐉', '🦊', '�
 export const DEFAULT_SETTINGS: GameSettings = {
   gameMode: 'classic',
   movementMode: 'fixed',
-  totalTiles: 30,
+  totalTiles: 100,
   maxTeams: 4,
   membersPerTeam: 3,
   questionTimeLimit: 30,

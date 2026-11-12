@@ -2,6 +2,7 @@ import { ShopItem, Question, RandomEvent, Mission, SurpriseCard, SubjectId } fro
 import { BAHASA_INDONESIA_QUESTIONS } from '@/data/bahasaIndonesiaQuestions';
 import { PAI_QUESTIONS } from '@/data/paiQuestions';
 import { FIQIH_LOKAL_QUESTIONS } from '@/data/fiqihLokalQuestions';
+import { BAHASA_ARAB_QUESTIONS } from '@/data/bahasaArabQuestions';
 
 // ===================== SHOP ITEMS =====================
 export const SHOP_ITEMS: ShopItem[] = [
@@ -1360,6 +1361,9 @@ export const QUESTION_BANK: Question[] = [
 
   // ===== Fiqih Lokal (100 soal dari fikih ibadah.py) =====
   ...FIQIH_LOKAL_QUESTIONS,
+
+  // ===== Bahasa Arab (100 soal dari bahas arab.py) =====
+  ...BAHASA_ARAB_QUESTIONS,
 ];
 
 export function getQuestionsBySubjects(subjects?: SubjectId[]): Question[] {

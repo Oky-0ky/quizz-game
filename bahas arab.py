@@ -1,0 +1,647 @@
+# -*- coding: utf-8 -*-
+"""
+Bank Soal Bahasa Arab (100 Soal Pilihan Ganda)
+Distribusi Kunci Jawaban Adil & Seimbang:
+- Pilihan A: 25 soal
+- Pilihan B: 25 soal
+- Pilihan C: 25 soal
+- Pilihan D: 25 soal
+Total: 100 soal
+"""
+
+bank_soal_arab = [
+    # --- BAGIAN 1: KOSAKATA BAB I (HALAMAN 5) ---
+    {
+        "no": 1,
+        "pertanyaan": "Arti dari kosakata النَّوْمُ adalah ....",
+        "pilihan": {"A": "tidur", "B": "bangun tidur", "C": "duduk", "D": "makan"},
+        "jawaban": "A"
+    },
+    {
+        "no": 2,
+        "pertanyaan": "Bahasa Arab dari 'saya bangun tidur' adalah ....",
+        "pilihan": {"A": "أَجْلِسُ", "B": "أَسْتَيْقِظُ", "C": "نُصَلِّي", "D": "يَرْكَبُ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 3,
+        "pertanyaan": "Arti dari kalimat صَلَاةُ الصُّبْحِ adalah ....",
+        "pilihan": {"A": "salat Zuhur", "B": "salat berjemaah", "C": "salat Subuh", "D": "kami salat"},
+        "jawaban": "C"
+    },
+    {
+        "no": 4,
+        "pertanyaan": "Kata السَّاعَةُ memiliki arti ....",
+        "pilihan": {"A": "jam tangan", "B": "waktu", "C": "menit", "D": "jam"},
+        "jawaban": "D"
+    },
+    {
+        "no": 5,
+        "pertanyaan": "Bahasa Arab dari 'jam tangan' adalah ....",
+        "pilihan": {"A": "سَاعَةُ الْيَدِ", "B": "السَّاعَةُ الْخَامِسَةُ", "C": "السَّاعَةُ الرَّابِعَةُ", "D": "السَّاعَةُ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 6,
+        "pertanyaan": "Arti dari kata بَعِيْدٌ عَنْ adalah ....",
+        "pilihan": {"A": "dekat dari", "B": "jauh dari", "C": "di depan", "D": "menuju ke"},
+        "jawaban": "B"
+    },
+    {
+        "no": 7,
+        "pertanyaan": "Kosakata بِتَأَنٍّ artinya adalah ....",
+        "pilihan": {"A": "dengan cepat", "B": "secara berjemaah", "C": "dengan hati-hati", "D": "dengan rajin"},
+        "jawaban": "C"
+    },
+    {
+        "no": 8,
+        "pertanyaan": "Arti dari لِأَدَاءِ adalah ....",
+        "pilihan": {"A": "untuk melihat", "B": "untuk pergi", "C": "untuk membaca", "D": "untuk melaksanakan"},
+        "jawaban": "D"
+    },
+    {
+        "no": 9,
+        "pertanyaan": "Bahasa Arab dari 'secara berjemaah' adalah ....",
+        "pilihan": {"A": "جَمَاعَةً", "B": "تَمَامًا", "C": "مَاشِيًا", "D": "بِتَأَنٍّ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 10,
+        "pertanyaan": "Arti dari kata أَجْلِسُ adalah ....",
+        "pilihan": {"A": "saya berdiri", "B": "saya duduk", "C": "saya tidur", "D": "saya makan"},
+        "jawaban": "B"
+    },
+    {
+        "no": 11,
+        "pertanyaan": "Bahasa Arab dari 'kami salat' adalah ....",
+        "pilihan": {"A": "صَلَّى", "B": "يُصَلِّي", "C": "نُصَلِّي", "D": "صَلِّ"},
+        "jawaban": "C"
+    },
+    {
+        "no": 12,
+        "pertanyaan": "Arti dari السَّاعَةُ الْخَامِسَةُ تَمَامًا adalah ....",
+        "pilihan": {"A": "jam empat tepat (04.00)", "B": "jam lima lebih tiga puluh menit (05.30)", "C": "jam empat lebih tiga puluh menit (04.30)", "D": "jam lima tepat (05.00)"},
+        "jawaban": "D"
+    },
+    {
+        "no": 13,
+        "pertanyaan": "Bahasa Arab dari 'jam empat lebih tiga puluh menit (04.30)' adalah ....",
+        "pilihan": {"A": "السَّاعَةُ الرَّابِعَةُ وَالنِّصْفُ", "B": "السَّاعَةُ الْخَامِسَةُ وَالنِّصْفُ", "C": "السَّاعَةُ الرَّابِعَةُ تَمَامًا", "D": "السَّاعَةُ الْخَامِسَةُ تَمَامًا"},
+        "jawaban": "A"
+    },
+    {
+        "no": 14,
+        "pertanyaan": "Kata يَرْكَبُ memiliki arti ....",
+        "pilihan": {"A": "dia (lk) berjalan", "B": "dia (lk) mengendarai", "C": "dia (lk) melihat", "D": "dia (lk) membaca"},
+        "jawaban": "B"
+    },
+    {
+        "no": 15,
+        "pertanyaan": "Arti dari pasangan kata ذَهَبَ – يَذْهَبُ adalah ....",
+        "pilihan": {"A": "datang", "B": "pulang", "C": "pergi", "D": "duduk"},
+        "jawaban": "C"
+    },
+    {
+        "no": 16,
+        "pertanyaan": "Bahasa Arab dari kata kerja 'belajar' (fi'il māḍī – fi'il muḍāri') adalah ....",
+        "pilihan": {"A": "كَتَبَ – يَكْتُبُ", "B": "قَرَأَ – يَقْرَأُ", "C": "نَظَرَ – يَنْظُرُ", "D": "تَعَلَّمَ – يَتَعَلَّمُ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 17,
+        "pertanyaan": "Arti dari pasangan kata نَظَرَ – يَنْظُرُ adalah ....",
+        "pilihan": {"A": "melihat", "B": "mendengar", "C": "menulis", "D": "makan"},
+        "jawaban": "A"
+    },
+    {
+        "no": 18,
+        "pertanyaan": "Pasangan kata kerja yang memiliki arti 'tidur' adalah ....",
+        "pilihan": {"A": "أَكَلَ – يَأْكُلُ", "B": "نَامَ – يَنَامُ", "C": "قَرَأَ – يَقْرَأُ", "D": "صَلَّى – يُصَلِّي"},
+        "jawaban": "B"
+    },
+    {
+        "no": 19,
+        "pertanyaan": "Arti dari pasangan kata أَكَلَ – يَأْكُلُ adalah ....",
+        "pilihan": {"A": "minum", "B": "tidur", "C": "makan", "D": "memasak"},
+        "jawaban": "C"
+    },
+    {
+        "no": 20,
+        "pertanyaan": "Bahasa Arab dari kata kerja 'membaca' adalah ....",
+        "pilihan": {"A": "كَتَبَ – يَكْتُبُ", "B": "تَعَلَّمَ – يَتَعَلَّمُ", "C": "ذَهَبَ – يَذْهَبُ", "D": "قَرَأَ – يَقْرَأُ"},
+        "jawaban": "D"
+    },
+
+    # --- BAGIAN 2: TATA BAHASA / FI'IL MUDARI' (HALAMAN 13) ---
+    {
+        "no": 21,
+        "pertanyaan": "Dalam bahasa Arab, istilah untuk kata kerja adalah ....",
+        "pilihan": {"A": "فِعْلٌ (fi'il)", "B": "اِسْمٌ (ism)", "C": "حَرْفٌ (ḥarf)", "D": "ضَمِيْرٌ (ḍamīr)"},
+        "jawaban": "A"
+    },
+    {
+        "no": 22,
+        "pertanyaan": "Kata kerja yang menunjukkan bentuk lampau dalam bahasa Arab disebut ....",
+        "pilihan": {"A": "fi'il muḍāri'", "B": "fi'il māḍī", "C": "fi'il amr", "D": "ḥarf muḍāra'ah"},
+        "jawaban": "B"
+    },
+    {
+        "no": 23,
+        "pertanyaan": "Kata kerja yang menunjukkan perbuatan yang sedang terjadi atau akan dikerjakan disebut ....",
+        "pilihan": {"A": "fi'il māḍī", "B": "fi'il amr", "C": "fi'il muḍāri'", "D": "isim fi'il"},
+        "jawaban": "C"
+    },
+    {
+        "no": 24,
+        "pertanyaan": "Kata kerja perintah dalam bahasa Arab disebut dengan istilah ....",
+        "pilihan": {"A": "fi'il māḍī", "B": "fi'il muḍāri'", "C": "fi'il muḍāra'ah", "D": "fi'il amr"},
+        "jawaban": "D"
+    },
+    {
+        "no": 25,
+        "pertanyaan": "Bentuk fi'il amr (kata perintah) dari kata 'menulis' (كَتَبَ – يَكْتُبُ) adalah ....",
+        "pilihan": {"A": "اُكْتُبْ", "B": "اِقْرَأْ", "C": "تَعَلَّمْ", "D": "صَلِّ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 26,
+        "pertanyaan": "Bentuk fi'il amr dari kata قَرَأَ – يَقْرَأُ (membaca) adalah ....",
+        "pilihan": {"A": "اُكْتُبْ", "B": "اِقْرَأْ", "C": "تَعَلَّمْ", "D": "صَلِّ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 27,
+        "pertanyaan": "Bentuk fi'il amr dari kata kerja 'salat' (صَلَّى – يُصَلِّي) adalah ....",
+        "pilihan": {"A": "صَلَّى", "B": "يُصَلِّي", "C": "صَلِّ", "D": "نُصَلِّي"},
+        "jawaban": "C"
+    },
+    {
+        "no": 28,
+        "pertanyaan": "Huruf-huruf tambahan yang umumnya mengawali fi'il muḍāri' disebut dengan ....",
+        "pilihan": {"A": "huruf jar", "B": "huruf ‘aṭaf", "C": "huruf hijaiyah", "D": "huruf muḍāra'ah"},
+        "jawaban": "D"
+    },
+    {
+        "no": 29,
+        "pertanyaan": "Berikut ini yang merupakan kelompok huruf muḍāra'ah adalah ....",
+        "pilihan": {"A": "أ ، ن ، ي ، ت", "B": "ا ، ب ، ت ، ث", "C": "م ، ن ، و ، ي", "D": "ك ، ل ، م ، ن"},
+        "jawaban": "A"
+    },
+    {
+        "no": 30,
+        "pertanyaan": "Jika pelaku pekerjaan (ḍamīr) pada kata يَتَعَلَّمُ diubah menjadi أَنَا (saya), maka bentuk fi'il muḍāri'-nya berubah menjadi ....",
+        "pilihan": {"A": "تَتَعَلَّمُ", "B": "أَتَعَلَّمُ", "C": "نَتَعَلَّمُ", "D": "تَعَلَّمَ"},
+        "jawaban": "B"
+    },
+
+    # --- BAGIAN 3: KOSAKATA BAB II (HALAMAN 35) ---
+    {
+        "no": 31,
+        "pertanyaan": "Arti dari kosakata الْفَصْلُ adalah ....",
+        "pilihan": {"A": "sekolah", "B": "pelajaran", "C": "kelas", "D": "buku"},
+        "jawaban": "C"
+    },
+    {
+        "no": 32,
+        "pertanyaan": "Bahasa Arab dari 'kelas enam' adalah ....",
+        "pilihan": {"A": "الْفَصْلُ الْخَامِسُ", "B": "الْفَصْلُ الرَّابِعُ", "C": "الْفَصْلُ", "D": "الْفَصْلُ السَّادِسُ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 33,
+        "pertanyaan": "Arti dari kata أُحِبُّ adalah ....",
+        "pilihan": {"A": "saya suka/cinta", "B": "saya benci", "C": "saya butuh", "D": "saya ingin"},
+        "jawaban": "A"
+    },
+    {
+        "no": 34,
+        "pertanyaan": "Bahasa Arab dari 'saya belajar' adalah ....",
+        "pilihan": {"A": "أَذْهَبُ", "B": "أَدْرُسُ", "C": "أَتَمَكَّنُ", "D": "أُحِبُّ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 35,
+        "pertanyaan": "Kosakata يُعَلِّمُ memiliki arti ....",
+        "pilihan": {"A": "dia belajar (lk)", "B": "dia menjelaskan (lk)", "C": "dia mengajar (lk)", "D": "dia membaca (lk)"},
+        "jawaban": "C"
+    },
+    {
+        "no": 36,
+        "pertanyaan": "Arti dari kata نَحْمِلُ adalah ....",
+        "pilihan": {"A": "kami pergi", "B": "kami paham", "C": "kami belajar", "D": "kami membawa"},
+        "jawaban": "D"
+    },
+    {
+        "no": 37,
+        "pertanyaan": "Bahasa Arab dari 'saya pergi' adalah ....",
+        "pilihan": {"A": "أَذْهَبُ", "B": "يَذْهَبُ", "C": "نَذْهَبُ", "D": "تَذْهَبُ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 38,
+        "pertanyaan": "Arti dari kata يَشْرَحُ adalah ....",
+        "pilihan": {"A": "dia mengajar (lk)", "B": "dia menjelaskan (lk)", "C": "dia menulis (lk)", "D": "dia membawa (lk)"},
+        "jawaban": "B"
+    },
+    {
+        "no": 39,
+        "pertanyaan": "Kosakata إِذَا memiliki arti ....",
+        "pilihan": {"A": "sejak", "B": "sebelum", "C": "jika", "D": "setelah"},
+        "jawaban": "C"
+    },
+    {
+        "no": 40,
+        "pertanyaan": "Bahasa Arab dari 'teman-teman' adalah ....",
+        "pilihan": {"A": "أُمِّي", "B": "أُسَاعِدُ", "C": "أَدْرُسُ", "D": "أَصْدِقَاءُ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 41,
+        "pertanyaan": "Arti dari kata أَتَمَكَّنُ adalah ....",
+        "pilihan": {"A": "saya menguasai", "B": "saya membutuhkan", "C": "saya ingin", "D": "saya suka"},
+        "jawaban": "A"
+    },
+    {
+        "no": 42,
+        "pertanyaan": "Kosakata لَمْ نَفْهَمْ artinya adalah ....",
+        "pilihan": {"A": "kami sudah paham", "B": "kami belum paham", "C": "saya tidak tahu", "D": "kami belum belajar"},
+        "jawaban": "B"
+    },
+    {
+        "no": 43,
+        "pertanyaan": "Bahasa Arab dari 'saya membutuhkan' adalah ....",
+        "pilihan": {"A": "أُرِيْدُ أَنْ", "B": "لِأَسْتَعِيْرَ", "C": "أَحْتَاجُ إِلَى", "D": "أَتَمَكَّنُ"},
+        "jawaban": "C"
+    },
+    {
+        "no": 44,
+        "pertanyaan": "Arti dari frasa عِنْدَ الدَّرْسِ adalah ....",
+        "pilihan": {"A": "sebelum pelajaran", "B": "setelah pelajaran", "C": "di dalam kelas", "D": "saat/ketika pelajaran"},
+        "jawaban": "D"
+    },
+    {
+        "no": 45,
+        "pertanyaan": "Arti dari kata لِأَسْتَعِيْرَ adalah ....",
+        "pilihan": {"A": "untuk saya pinjam", "B": "untuk saya baca", "C": "untuk saya tulis", "D": "untuk saya bawa"},
+        "jawaban": "A"
+    },
+    {
+        "no": 46,
+        "pertanyaan": "Bahasa Arab dari 'saya ingin' adalah ....",
+        "pilihan": {"A": "أُحِبُّ", "B": "أُرِيْدُ أَنْ", "C": "أَحْتَاجُ إِلَى", "D": "أُسَاعِدُ"},
+        "jawaban": "B"
+    },
+
+    # --- BAGIAN 4: KOSAKATA & FI'IL BAB III (HALAMAN 63) ---
+    {
+        "no": 47,
+        "pertanyaan": "Arti dari kosakata مُنْذُ adalah ....",
+        "pilihan": {"A": "sebelum", "B": "setelah", "C": "sejak", "D": "ketika"},
+        "jawaban": "C"
+    },
+    {
+        "no": 48,
+        "pertanyaan": "Bahasa Arab dari 'sebelum' adalah ....",
+        "pilihan": {"A": "بَعْدَ", "B": "مُنْذُ", "C": "إِذَا", "D": "قَبْلَ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 49,
+        "pertanyaan": "Arti dari kata بَعْدَ adalah ....",
+        "pilihan": {"A": "setelah", "B": "sebelum", "C": "sejak", "D": "sampai"},
+        "jawaban": "A"
+    },
+    {
+        "no": 50,
+        "pertanyaan": "Kosakata أُسَاعِدُ memiliki arti ....",
+        "pilihan": {"A": "saya memasak", "B": "saya menolong", "C": "saya pergi", "D": "saya duduk"},
+        "jawaban": "B"
+    },
+    {
+        "no": 51,
+        "pertanyaan": "Bahasa Arab dari 'dapur' adalah ....",
+        "pilihan": {"A": "الْفَصْلُ", "B": "بِلَاطٌ", "C": "الْمَطْبَخُ", "D": "بَيْتِنَا"},
+        "jawaban": "C"
+    },
+    {
+        "no": 52,
+        "pertanyaan": "Arti dari kalimat أُمِّي تَطْبَخُ adalah ....",
+        "pilihan": {"A": "ibu saya menolong", "B": "ibu saya pergi", "C": "ibu saya duduk", "D": "ibu saya memasak"},
+        "jawaban": "D"
+    },
+    {
+        "no": 53,
+        "pertanyaan": "Arti dari kata بِلَاطٌ adalah ....",
+        "pilihan": {"A": "lantai", "B": "dinding", "C": "atap", "D": "pintu"},
+        "jawaban": "A"
+    },
+    {
+        "no": 54,
+        "pertanyaan": "Kosakata يَذْهَبَانِ memiliki arti ....",
+        "pilihan": {"A": "dia pergi", "B": "mereka berdua pergi", "C": "kami pergi", "D": "saya pergi"},
+        "jawaban": "B"
+    },
+    {
+        "no": 55,
+        "pertanyaan": "Bahasa Arab dari 'motor' berdasarkan kosakata pada halaman 63 adalah ....",
+        "pilihan": {"A": "الْجَوَّالَةُ", "B": "السَّيَّارَةُ", "C": "الدَّرَّاجَةُ", "D": "السَّاعَةُ"},
+        "jawaban": "C"
+    },
+    {
+        "no": 56,
+        "pertanyaan": "Arti dari kata الْجَوَّالَةُ berdasarkan buku tersebut adalah ....",
+        "pilihan": {"A": "motor", "B": "mobil", "C": "jalan kaki", "D": "sepeda"},
+        "jawaban": "D"
+    },
+    {
+        "no": 57,
+        "pertanyaan": "Arti dari frasa إِلَى بَيْتِنَا adalah ....",
+        "pilihan": {"A": "ke rumah kami", "B": "dari rumah kami", "C": "di depan rumah kami", "D": "di dalam dapur"},
+        "jawaban": "A"
+    },
+    {
+        "no": 58,
+        "pertanyaan": "Bahasa Arab dari 'berjalan kaki' adalah ....",
+        "pilihan": {"A": "جَمَاعَةً", "B": "مَاشِيًا", "C": "تَمَامًا", "D": "بِتَأَنٍّ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 59,
+        "pertanyaan": "Pasangan fi'il يَجْلِسَانِ – تَجْلِسَانِ memiliki kata dasar yang artinya ....",
+        "pilihan": {"A": "menulis", "B": "masuk", "C": "duduk", "D": "membawa"},
+        "jawaban": "C"
+    },
+    {
+        "no": 60,
+        "pertanyaan": "Pasangan fi'il يَدْخُلَانِ – تَدْخُلَانِ berasal dari kata kerja yang berarti ....",
+        "pilihan": {"A": "keluar", "B": "meminjam", "C": "mengajar", "D": "masuk"},
+        "jawaban": "D"
+    },
+
+    # --- BAGIAN 5: PENERAPAN KALIMAT & VARIASI FI'IL ---
+    {
+        "no": 61,
+        "pertanyaan": "Perhatikan kalimat: 'أَسْتَيْقِظُ مِنَ النَّوْمِ فِي السَّاعَةِ الرَّابِعَةِ وَالنِّصْفِ.' Arti dari السَّاعَةِ الرَّابِعَةِ وَالنِّصْفِ adalah ....",
+        "pilihan": {"A": "pukul 04.30", "B": "pukul 04.00 tepat", "C": "pukul 05.00 tepat", "D": "pukul 05.30"},
+        "jawaban": "A"
+    },
+    {
+        "no": 62,
+        "pertanyaan": "Berdasarkan kosakata pada Bab I, kegiatan ibadah yang dilakukan pada pukul 05.00 tepat adalah ....",
+        "pilihan": {"A": "قِرَاءَةُ الْكِتَابِ", "B": "صَلَاةُ الصُّبْحِ", "C": "تَعَلُّمُ اللُّغَةِ", "D": "أَكْلُ الطَّعَامِ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 63,
+        "pertanyaan": "Jika seseorang pergi ke sekolah yang letaknya 'jauh dari' rumah, ungkapan bahasa Arab yang tepat adalah ....",
+        "pilihan": {"A": "لِأَدَاءِ", "B": "بِتَأَنٍّ", "C": "بَعِيْدٌ عَنْ", "D": "جَمَاعَةً"},
+        "jawaban": "C"
+    },
+    {
+        "no": 64,
+        "pertanyaan": "Perhatikan kata kerja: كَتَبَ – يَكْتُبُ. Kata كَتَبَ pada pasangan tersebut merupakan bentuk ....",
+        "pilihan": {"A": "fi'il muḍāri'", "B": "fi'il amr", "C": "huruf muḍāra'ah", "D": "fi'il māḍī"},
+        "jawaban": "D"
+    },
+    {
+        "no": 65,
+        "pertanyaan": "Bentuk fi'il muḍāri' dari kata kerja 'salat' untuk pelaku dia laki-laki adalah ....",
+        "pilihan": {"A": "يُصَلِّي", "B": "صَلَّى", "C": "صَلِّ", "D": "نُصَلِّي"},
+        "jawaban": "A"
+    },
+    {
+        "no": 66,
+        "pertanyaan": "Dalam bahasa Arab, kata kerja yang menunjukkan perintah kepada orang lain disebut ....",
+        "pilihan": {"A": "fi'il māḍī", "B": "fi'il amr", "C": "fi'il muḍāri'", "D": "ḍamīr"},
+        "jawaban": "B"
+    },
+    {
+        "no": 67,
+        "pertanyaan": "Perhatikan tabel tata bahasa halaman 13: تَعَلَّمَ – يَتَعَلَّمُ – تَعَلَّمْ. Kata ketiga (تَعَلَّمْ) memiliki arti ....",
+        "pilihan": {"A": "telah belajar", "B": "sedang belajar", "C": "belajarlah!", "D": "saya sedang belajar"},
+        "jawaban": "C"
+    },
+    {
+        "no": 68,
+        "pertanyaan": "Jika huruf ي pada kata يَكْتُبُ diganti dengan huruf أ (untuk pelaku أَنَا), maka bentuk dan harakatnya menjadi ....",
+        "pilihan": {"A": "تَكْتُبُ", "B": "نَكْتُبُ", "C": "اُكْتُبْ", "D": "أَكْتُبُ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 69,
+        "pertanyaan": "Perubahan bentuk kata يَقْرَأُ jika pelakunya adalah أَنَا (saya) menjadi ....",
+        "pilihan": {"A": "أَقْرَأُ", "B": "نَقْرَأُ", "C": "تَقْرَأُ", "D": "اِقْرَأْ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 70,
+        "pertanyaan": "Huruf awal pada kata أُصَلِّي (saya sedang salat) termasuk ke dalam kelompok ....",
+        "pilihan": {"A": "fi'il māḍī", "B": "huruf muḍāra'ah", "C": "fi'il amr", "D": "harakat fathah"},
+        "jawaban": "B"
+    },
+    {
+        "no": 71,
+        "pertanyaan": "Perhatikan kalimat: 'أَنَا أَدْرُسُ فِي الْفَصْلِ السَّادِسِ.' Arti dari kalimat tersebut adalah ....",
+        "pilihan": {"A": "Saya mengajar di kelas enam.", "B": "Saya pergi ke kelas enam.", "C": "Saya belajar di kelas enam.", "D": "Saya suka kelas enam."},
+        "jawaban": "C"
+    },
+    {
+        "no": 72,
+        "pertanyaan": "Arti dari kalimat 'أُحِبُّ اللُّغَةَ الْعَرَبِيَّةَ' sesuai judul Bab II pada halaman 35 adalah ....",
+        "pilihan": {"A": "Saya belajar bahasa Arab", "B": "Saya menguasai bahasa Arab", "C": "Saya membutuhkan bahasa Arab", "D": "Saya menyukai bahasa Arab"},
+        "jawaban": "D"
+    },
+    {
+        "no": 73,
+        "pertanyaan": "Perhatikan pasangan kata: يُعَلِّمُ – يَشْرَحُ. Kedua kata kerja tersebut memiliki pelaku yang sama, yaitu ....",
+        "pilihan": {"A": "dia laki-laki (هُوَ)", "B": "saya (أَنَا)", "C": "kami (نَحْنُ)", "D": "mereka berdua (هُمَا)"},
+        "jawaban": "A"
+    },
+    {
+        "no": 74,
+        "pertanyaan": "Jika dalam pembelajaran di kelas 'kami belum paham' materi yang disampaikan guru, ungkapan bahasa Arab yang sesuai adalah ....",
+        "pilihan": {"A": "أَتَمَكَّنُ", "B": "لَمْ نَفْهَمْ", "C": "نَحْمِلُ", "D": "عِنْدَ الدَّرْسِ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 75,
+        "pertanyaan": "Arti dari frasa 'أُرِيْدُ أَنْ أَذْهَبَ' berdasarkan kosakata halaman 35 adalah ....",
+        "pilihan": {"A": "saya suka pergi", "B": "saya membutuhkan pergi", "C": "saya ingin pergi", "D": "saya menguasai pergi"},
+        "jawaban": "C"
+    },
+    {
+        "no": 76,
+        "pertanyaan": "Kata أَصْدِقَاءُ pada kosakata Bab II merupakan bentuk jamak yang berarti ....",
+        "pilihan": {"A": "guru-guru", "B": "buku-buku", "C": "kelas-kelas", "D": "teman-teman"},
+        "jawaban": "D"
+    },
+    {
+        "no": 77,
+        "pertanyaan": "Ungkapan yang tepat untuk menyatakan 'saat/ketika pelajaran' berlangsung adalah ....",
+        "pilihan": {"A": "عِنْدَ الدَّرْسِ", "B": "إِذَا", "C": "لِأَسْتَعِيْرَ", "D": "أَحْتَاجُ إِلَى"},
+        "jawaban": "A"
+    },
+    {
+        "no": 78,
+        "pertanyaan": "Kata kerja لِأَسْتَعِيْرَ berkaitan dengan aktivitas meminjam. Dalam daftar kosakata Bab II, arti lengkapnya adalah ....",
+        "pilihan": {"A": "untuk dia pinjam", "B": "untuk saya pinjam", "C": "untuk kami pinjam", "D": "mereka berdua meminjam"},
+        "jawaban": "B"
+    },
+    {
+        "no": 79,
+        "pertanyaan": "Perhatikan kata-kata keterangan waktu: مُنْذُ – قَبْلَ – بَعْدَ. Urutan arti yang tepat dari ketiga kata tersebut secara berurutan adalah ....",
+        "pilihan": {"A": "sebelum – setelah – sejak", "B": "setelah – sejak – sebelum", "C": "sejak – sebelum – setelah", "D": "sejak – setelah – sebelum"},
+        "jawaban": "C"
+    },
+    {
+        "no": 80,
+        "pertanyaan": "Perhatikan kalimat: 'أُسَاعِدُ أُمِّي فِي الْمَطْبَخِ.' Arti dari kalimat tersebut adalah ....",
+        "pilihan": {"A": "Ibu saya memasak di dapur.", "B": "Ibu saya pergi ke dapur.", "C": "Saya duduk bersama ibu saya di dapur.", "D": "Saya menolong ibu saya di dapur."},
+        "jawaban": "D"
+    },
+    {
+        "no": 81,
+        "pertanyaan": "Kata تَطْبَخُ pada frasa أُمِّي تَطْبَخُ memiliki arti ....",
+        "pilihan": {"A": "memasak", "B": "menolong", "C": "menyapu", "D": "mencuci"},
+        "jawaban": "A"
+    },
+    {
+        "no": 82,
+        "pertanyaan": "Kata بِلَاطٌ merupakan benda yang ada di dalam rumah/bangunan, artinya adalah ....",
+        "pilihan": {"A": "dapur", "B": "lantai", "C": "ruang tamu", "D": "halaman"},
+        "jawaban": "B"
+    },
+    {
+        "no": 83,
+        "pertanyaan": "Perhatikan perubahan bentuk kata kerja: يَذْهَبُ ➔ يَذْهَبَانِ. Penambahan huruf ا dan ن pada akhir kata يَذْهَبَانِ menunjukkan bahwa pelakunya berjumlah ....",
+        "pilihan": {"A": "satu orang", "B": "banyak orang", "C": "dua orang", "D": "diri sendiri"},
+        "jawaban": "C"
+    },
+    {
+        "no": 84,
+        "pertanyaan": "Pada halaman 63, terdapat pasangan fi'il يَكْتُبَانِ – تَكْتُبَانِ. Kata dasar dari pasangan tersebut berarti ....",
+        "pilihan": {"A": "membaca", "B": "duduk", "C": "masuk", "D": "menulis"},
+        "jawaban": "D"
+    },
+    {
+        "no": 85,
+        "pertanyaan": "Pasangan fi'il يَسْتَعِيْرَانِ – تَسْتَعِيْرَانِ memiliki akar kata yang sama dengan kosakata di halaman 35, yaitu ....",
+        "pilihan": {"A": "لِأَسْتَعِيْرَ", "B": "أَتَمَكَّنُ", "C": "أَحْتَاجُ", "D": "أُرِيْدُ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 86,
+        "pertanyaan": "Pasangan fi'il يَحْمِلَانِ – تَحْمِلَانِ pada halaman 63 berkaitan dengan arti kata kerja ....",
+        "pilihan": {"A": "belajar", "B": "membawa", "C": "mengajar", "D": "pergi"},
+        "jawaban": "B"
+    },
+    {
+        "no": 87,
+        "pertanyaan": "Pasangan fi'il يَدْرُسَانِ – تَدْرُسَانِ pada halaman 63 memiliki kata dasar yang sama dengan kata أَدْرُسُ, yang artinya adalah ....",
+        "pilihan": {"A": "mengajar", "B": "menulis", "C": "belajar", "D": "menjelaskan"},
+        "jawaban": "C"
+    },
+    {
+        "no": 88,
+        "pertanyaan": "Pasangan fi'il يُعَلِّمَانِ – تُعَلِّمَانِ berasal dari kata kerja yang artinya ....",
+        "pilihan": {"A": "belajar", "B": "duduk", "C": "masuk", "D": "mengajar"},
+        "jawaban": "D"
+    },
+    {
+        "no": 89,
+        "pertanyaan": "Berdasarkan tabel kosakata halaman 63, perbedaan arti antara الدَّرَّاجَةُ dan الْجَوَّالَةُ adalah ....",
+        "pilihan": {"A": "الدَّرَّاجَةُ artinya motor, sedangkan الْجَوَّالَةُ artinya sepeda", "B": "الدَّرَّاجَةُ artinya sepeda, sedangkan الْجَوَّالَةُ artinya motor", "C": "الدَّرَّاجَةُ artinya mobil, sedangkan الْجَوَّالَةُ artinya motor", "D": "الدَّرَّاجَةُ artinya jalan kaki, sedangkan الْجَوَّالَةُ artinya sepeda"},
+        "jawaban": "A"
+    },
+    {
+        "no": 90,
+        "pertanyaan": "Jika seseorang berangkat menuju suatu tempat tanpa menggunakan kendaraan, keadaan tersebut dalam bahasa Arab disebut ....",
+        "pilihan": {"A": "يَرْكَبُ", "B": "مَاشِيًا", "C": "جَمَاعَةً", "D": "بِتَأَنٍّ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 91,
+        "pertanyaan": "Frasa إِلَى بَيْتِنَا terdiri dari huruf jar إِلَى dan kata بَيْتِنَا, yang keseluruhannya berarti ....",
+        "pilihan": {"A": "dari rumah kami", "B": "di rumah kami", "C": "ke rumah kami", "D": "depan rumah kami"},
+        "jawaban": "C"
+    },
+    {
+        "no": 92,
+        "pertanyaan": "Kata kerja yang digunakan untuk menyatakan aktivitas mengendarai (dia laki-laki) pada Bab I adalah ....",
+        "pilihan": {"A": "يَذْهَبُ", "B": "يَنْظُرُ", "C": "يَأْكُلُ", "D": "يَرْكَبُ"},
+        "jawaban": "D"
+    },
+    {
+        "no": 93,
+        "pertanyaan": "Lawan kata dari نَامَ (tidur) berdasarkan kosakata pada Bab I adalah ....",
+        "pilihan": {"A": "أَسْتَيْقِظُ (bangun tidur)", "B": "أَجْلِسُ (duduk)", "C": "يَرْكَبُ (mengendarai)", "D": "يَنْظُرُ (melihat)"},
+        "jawaban": "A"
+    },
+    {
+        "no": 94,
+        "pertanyaan": "Pasangan kata kerja yang menunjukkan aktivitas makan dan tidur secara berurutan adalah ....",
+        "pilihan": {"A": "قَرَأَ – يَقْرَأُ dan كَتَبَ – يَكْتُبُ", "B": "أَكَلَ – يَأْكُلُ dan نَامَ – يَنَامُ", "C": "ذَهَبَ – يَذْهَبُ dan نَظَرَ – يَنْظُرُ", "D": "تَعَلَّمَ – يَتَعَلَّمُ dan صَلَّى – يُصَلِّي"},
+        "jawaban": "B"
+    },
+    {
+        "no": 95,
+        "pertanyaan": "Kata تَمَامًا yang mengikuti penyebutan waktu السَّاعَةُ الْخَامِسَةُ memiliki fungsi untuk menegaskan arti ....",
+        "pilihan": {"A": "lebih setengah", "B": "kurang seperempat", "C": "tepat", "D": "pagi hari"},
+        "jawaban": "C"
+    },
+    {
+        "no": 96,
+        "pertanyaan": "Dalam kaidah perubahan fi'il muḍāri' untuk ḍamīr أَنَا (halaman 13), hal yang terjadi pada harakat huruf-huruf lainnya setelah huruf ي diganti dengan أ adalah ....",
+        "pilihan": {"A": "berubah menjadi kasrah semua", "B": "berubah menjadi sukun di akhir", "C": "berubah menjadi tanwin", "D": "harakat tidak berubah"},
+        "jawaban": "D"
+    },
+    {
+        "no": 97,
+        "pertanyaan": "Kata kerja berikut ini yang merupakan bentuk fi'il māḍī adalah ....",
+        "pilihan": {"A": "تَعَلَّمَ", "B": "يَتَعَلَّمُ", "C": "تَعَلَّمْ", "D": "أَتَعَلَّمُ"},
+        "jawaban": "A"
+    },
+    {
+        "no": 98,
+        "pertanyaan": "Kata kerja berikut ini yang menunjukkan perintah untuk membaca adalah ....",
+        "pilihan": {"A": "قَرَأَ", "B": "اِقْرَأْ", "C": "يَقْرَأُ", "D": "أَقْرَأُ"},
+        "jawaban": "B"
+    },
+    {
+        "no": 99,
+        "pertanyaan": "Perhatikan daftar kata berikut: 1) أُحِبُّ   2) أَدْرُسُ   3) أَذْهَبُ   4) يُعَلِّمُ. Kata kerja yang pelakunya BUKAN 'saya' (أَنَا) ditunjukkan oleh nomor ....",
+        "pilihan": {"A": "1", "B": "2", "C": "4 — يُعَلِّمُ", "D": "3"},
+        "jawaban": "C"
+    },
+    {
+        "no": 100,
+        "pertanyaan": "Susunan kalimat yang paling tepat menggunakan kosakata pada halaman 63 untuk menyatakan 'Mereka berdua pergi ke rumah kami dengan berjalan kaki' adalah ....",
+        "pilihan": {"A": "يَجْلِسَانِ فِي الْمَطْبَخِ تَمَامًا", "B": "يَدْخُلَانِ الْفَصْلَ السَّادِسَ بِتَأَنٍّ", "C": "يَكْتُبَانِ الدَّرْسَ جَمَاعَةً", "D": "يَذْهَبَانِ إِلَى بَيْتِنَا مَاشِيًا"},
+        "jawaban": "D"
+    }
+]
+
+
+def cek_distribusi_jawaban(daftar_soal):
+    hitungan = {"A": 0, "B": 0, "C": 0, "D": 0}
+    for soal in daftar_soal:
+        kunci = soal["jawaban"]
+        if kunci in hitungan:
+            hitungan[kunci] += 1
+    return hitungan
+
+
+def cetak_semua_soal(daftar_soal):
+    for soal in daftar_soal:
+        print(f"{soal['no']}. {soal['pertanyaan']}")
+        for opsi, teks in soal["pilihan"].items():
+            print(f"   {opsi}. {teks}")
+        print(f"   Kunci Jawaban: {soal['jawaban']}\n")
+
+
+if __name__ == "__main__":
+    distribusi = cek_distribusi_jawaban(bank_soal_arab)
+    print(f"Total Soal: {len(bank_soal_arab)}")
+    print(f"Distribusi Kunci Jawaban: {distribusi}\n")
+    print("=" * 50)
+    cetak_semua_soal(bank_soal_arab)

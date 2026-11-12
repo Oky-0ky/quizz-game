@@ -42,6 +42,7 @@ Aplikasi web game edukasi interaktif multiplayer berkelompok dengan konsep perma
   - Isian Singkat & Hitungan (Math & Short Answer)
   - Logika & Tantangan Khusus
 - Tingkat kesulitan: Mudah, Sedang, Sulit, Sangat Sulit.
+- Mata pelajaran: Matematika, Bahasa Indonesia, PAI Nasional, Fiqih Lokal, dan Bahasa Arab (100 soal dari `bahas arab.py`).
 - Bonus koin untuk jawaban cepat (*speed bonus*).
 
 ### 5. Mode Pergerakan & Dadu
