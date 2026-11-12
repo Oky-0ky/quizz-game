@@ -70,7 +70,20 @@ Aplikasi web game edukasi interaktif multiplayer berkelompok dengan konsep perma
 - Editor papan visual: Atur jumlah kotak (20–120) dan tambah/hapus kotak spesial.
 - Pengaturan aturan & harga item yang fleksibel.
 
-### 10. Database PostgreSQL / Supabase
+### 10. Monopoli Petualang
+- Mode papan persegi START → kotak 1–30 → FINISH yang dapat dipilih terpisah dari Adventure.
+- Memakai kelompok yang diatur di aplikasi, dengan saldo, wilayah, bangunan, inventaris, dan riwayat khusus untuk mode ini.
+- Setiap giliran dimulai dengan kuis; jawaban benar otomatis melempar dadu dan jawaban salah mengakhiri giliran tanpa lemparan.
+- Bank soal Monopoli menggunakan soal pilihan ganda Bahasa Indonesia dari `Bahasa_Indonesia.py`; tingkat MUDAH/SEDANG/SULIT dipertahankan dan SANGAT SULIT dipetakan ke tingkat sulit.
+- Mendarat di properti kosong langsung menawarkan pembelian; properti lawan mewajibkan pembayaran sewa, dengan opsi menjawab satu soal sulit untuk diskon 50%.
+- Setelah sewa dibayar, pemain dapat mengambil alih properti lawan dengan membayar 2x harga kepada pemiliknya; properti yang sudah mencapai bangunan maksimum (Kastil/Landmark) tidak dapat diambil alih.
+- Panel Admin di pengaturan kelompok dapat menukar fitur antar-kotak sebelum pertandingan dimulai; susunan tersimpan dan START/FINISH tetap.
+- Papan juga mencakup Kartu Kesempatan, Dana Umum, dan penjara yang perlu dibebaskan lewat kuis.
+- Kartu Kesempatan dan Dana Umum menampilkan pop-up bonus, denda, atau perpindahan posisi.
+- Durasi dapat ditentukan berdasarkan 10/15/20 putaran atau batas waktu.
+- Panel Admin menyediakan bobot peluang relatif untuk tiap angka dadu (1–6); bobot lebih kecil membuat angka lebih sulit muncul dan pengaturannya berlaku pada permainan berikutnya.
+
+### 11. Database PostgreSQL / Supabase
 - 20 tabel lengkap (`users`, `game_rooms`, `teams`, `team_members`, `board_configs`, `board_tiles`, `questions`, `question_categories`, `game_turns`, `answers`, `team_positions`, `team_coins`, `shop_items`, `team_inventory`, `item_usage`, `random_events`, `missions`, `duels`, `achievements`, `game_results`).
 - File schema siap pakai: `supabase/schema.sql`.
 

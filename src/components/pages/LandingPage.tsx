@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/store/gameStore';
+import { MonopolyDuration, MonopolyRules, useMonopolyStore } from '@/store/monopolyStore';
 import { TEAM_COLORS, TEAM_AVATARS, GameMode, SUBJECTS, SubjectId, DEFAULT_SUBJECTS, BoardMapId, AdventurePathId } from '@/types/game';
 import { QUESTION_BANK } from '@/data/gameData';
 import { ADVENTURE_PATHS, BOARD_MAPS, getAdventurePath } from '@/data/adventureMap';
@@ -29,11 +30,47 @@ const BG_TILES: BgTile[] = [
   { emoji: '🛡️', top: '5%', right: '25%', size: 34 },
 ];
 
+const MONOPOLY_RULE_FIELDS: Array<{ key: keyof MonopolyRules; label: string }> = [
+  { key: 'startingCash', label: 'Modal awal' },
+  { key: 'goSalary', label: 'Gaji saat melewati GO' },
+  { key: 'bailCost', label: 'Biaya bebas penjara' },
+  { key: 'correctAnswerReward', label: 'Hadiah jawaban benar' },
+  { key: 'wrongAnswerPenalty', label: 'Hukuman jawaban salah' },
+  { key: 'incomeTax', label: 'Income Tax' },
+  { key: 'superTax', label: 'Super Tax' },
+  { key: 'chanceReward', label: 'Hadiah Chance' },
+  { key: 'chanceFine', label: 'Denda Chance' },
+  { key: 'communityReward', label: 'Hadiah Community Chest' },
+  { key: 'communityFine', label: 'Denda Community Chest' },
+  { key: 'diceWeight1', label: 'Bobot dadu angka 1' },
+  { key: 'diceWeight2', label: 'Bobot dadu angka 2' },
+  { key: 'diceWeight3', label: 'Bobot dadu angka 3' },
+  { key: 'diceWeight4', label: 'Bobot dadu angka 4' },
+  { key: 'diceWeight5', label: 'Bobot dadu angka 5' },
+  { key: 'diceWeight6', label: 'Bobot dadu angka 6' },
+];
+
 export default function LandingPage() {
   const startNewGame = useGameStore(s => s.startNewGame);
   const savedBoardSettings = useGameStore(s => s.savedBoardSettings);
+  const startMonopolyGame = useMonopolyStore(s => s.startGame);
+  const monopolyBoard = useMonopolyStore(s => s.board);
+  const monopolyRules = useMonopolyStore(s => s.rules);
+  const swapMonopolyTiles = useMonopolyStore(s => s.swapBoardTiles);
+  const resetMonopolyBoard = useMonopolyStore(s => s.resetBoard);
+  const updateMonopolyRules = useMonopolyStore(s => s.updateRules);
+  const updateMonopolyTileEconomy = useMonopolyStore(s => s.updateTileEconomy);
 
   const [step, setStep] = useState<'home' | 'setup' | 'teams'>('home');
+  const [isMonopoly, setIsMonopoly] = useState(false);
+  const [monopolyDuration, setMonopolyDuration] = useState<MonopolyDuration>({ type: 'rounds', value: 10 });
+  const [isMonopolyAdminOpen, setIsMonopolyAdminOpen] = useState(false);
+  const [featureSourceId, setFeatureSourceId] = useState<number | null>(null);
+  const [featureTargetId, setFeatureTargetId] = useState(1);
+  const [economyTileId, setEconomyTileId] = useState<number | null>(null);
+  const [economyPrice, setEconomyPrice] = useState<string | null>(null);
+  const [economyRent, setEconomyRent] = useState<string | null>(null);
+  const [economyDevelopmentCost, setEconomyDevelopmentCost] = useState<string | null>(null);
   const [gameName, setGameName] = useState('Quiz Board Adventure');
   const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
   const [selectedSubjects, setSelectedSubjects] = useState<SubjectId[]>(DEFAULT_SUBJECTS);
@@ -41,6 +78,14 @@ export default function LandingPage() {
   const [selectedPathOverride, setSelectedPathOverride] = useState<AdventurePathId | null>(null);
   const selectedMap = selectedMapOverride ?? savedBoardSettings.boardMapId;
   const selectedPath = selectedPathOverride ?? savedBoardSettings.adventurePathId;
+  const jailTileId = monopolyBoard.find(tile => tile.type === 'jail')?.id ?? 1;
+  const selectedFeatureSourceId = featureSourceId ?? jailTileId;
+  const configurableTiles = monopolyBoard.filter(tile => (
+    tile.type === 'property' || tile.type === 'rail' || tile.type === 'air' ||
+    tile.type === 'cruise' || tile.type === 'space' || tile.type === 'utility'
+  ));
+  const selectedEconomyTileId = economyTileId ?? configurableTiles[0]?.id ?? 1;
+  const selectedEconomyTile = monopolyBoard[selectedEconomyTileId];
   const [teams, setTeams] = useState<Array<{
     name: string;
     color: string;
@@ -96,6 +141,15 @@ export default function LandingPage() {
   };
 
   const handlePlayGame = () => {
+    if (isMonopoly) {
+      if (teams.length < 2) return;
+      startMonopolyGame(
+        teams.map(team => ({ name: team.name, color: team.color, avatar: team.avatar })),
+        monopolyDuration,
+      );
+      return;
+    }
+
     const PATH_CYCLE: AdventurePathId[] = ['hutan', 'sungai', 'kota'];
     startNewGame(
       gameName,
@@ -121,7 +175,8 @@ export default function LandingPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 w-full max-w-2xl border border-white/20">
-          <h2 className="font-display text-3xl text-white mb-6 text-center">🏆 Atur Kelompok</h2>
+          <h2 className="font-display text-3xl text-white mb-2 text-center">{isMonopoly ? '🎲 Atur Kelompok Monopoli' : '🏆 Atur Kelompok'}</h2>
+          {isMonopoly && <p className="mb-6 text-center text-sm text-white/65">Kelompok yang sama, dengan saldo dan inventaris khusus mode Monopoli.</p>}
           
           {/* Existing Teams */}
           <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
@@ -137,9 +192,11 @@ export default function LandingPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-white text-base truncate">{t.name}</span>
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex-shrink-0 shadow-sm" style={{ backgroundColor: pathDef.labelColor + 'dd', borderColor: pathDef.ribbon, color: '#fff' }}>
-                        {pathDef.emoji} Jalur {i + 1}: {pathDef.name}
-                      </span>
+                      {!isMonopoly && (
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex-shrink-0 shadow-sm" style={{ backgroundColor: pathDef.labelColor + 'dd', borderColor: pathDef.ribbon, color: '#fff' }}>
+                          {pathDef.emoji} Jalur {i + 1}: {pathDef.name}
+                        </span>
+                      )}
                     </div>
                     <div className="text-white/70 text-xs mt-0.5">{t.members.map(m => m.name).join(', ')}</div>
                   </div>
@@ -150,7 +207,7 @@ export default function LandingPage() {
           </div>
 
           {/* Add Team Form */}
-          {teams.length < 4 && (
+          {teams.length < 6 && (
             <div className="bg-white/5 rounded-2xl p-4 mb-6 space-y-3">
               <h3 className="text-white font-bold">+ Tambah Kelompok</h3>
               <input
@@ -192,13 +249,218 @@ export default function LandingPage() {
             </div>
           )}
 
+          {isMonopoly && (
+            <>
+            <section className="mb-6 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-black text-violet-100">⚙️ Panel Admin Papan Monopoli</h3>
+                  <p className="mt-1 text-xs text-white/65">Pindahkan fitur ke kotak lain sebelum permainan dimulai.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMonopolyAdminOpen(open => !open)}
+                  className="shrink-0 rounded-xl border border-violet-200/20 bg-violet-400/15 px-3 py-2 text-xs font-bold text-violet-100 hover:bg-violet-400/25"
+                >
+                  {isMonopolyAdminOpen ? 'Tutup Panel' : 'Atur Kotak'}
+                </button>
+              </div>
+              {isMonopolyAdminOpen && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-xs leading-relaxed text-white/65">
+                    Pilih fitur yang ingin dipindahkan dan kotak tujuan. Isi kotak tujuan akan bertukar tempat dengan fitur tersebut. GO tetap di kotak awal.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="space-y-1 text-xs font-bold text-white/75">
+                      Fitur yang dipindahkan
+                      <select
+                        value={selectedFeatureSourceId}
+                        onChange={event => setFeatureSourceId(Number(event.target.value))}
+                        className="w-full rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-white"
+                      >
+                        {monopolyBoard.slice(1).map(tile => (
+                          <option key={tile.id} value={tile.id}>Kotak {tile.id} — {tile.icon} {tile.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-xs font-bold text-white/75">
+                      Kotak tujuan
+                      <select
+                        value={featureTargetId}
+                        onChange={event => setFeatureTargetId(Number(event.target.value))}
+                        className="w-full rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-white"
+                      >
+                        {monopolyBoard.slice(1).map(tile => (
+                          <option key={tile.id} value={tile.id}>Kotak {tile.id} — {tile.icon} {tile.name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={selectedFeatureSourceId === featureTargetId}
+                      onClick={() => {
+                        swapMonopolyTiles(selectedFeatureSourceId, featureTargetId);
+                        setFeatureSourceId(featureTargetId);
+                        setFeatureTargetId(selectedFeatureSourceId);
+                      }}
+                      className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Tukar Letak Fitur
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetMonopolyBoard();
+                        setFeatureSourceId(10);
+                        setFeatureTargetId(1);
+                      }}
+                      className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-white/75 transition hover:bg-white/10"
+                    >
+                      Kembalikan Susunan Awal
+                    </button>
+                  </div>
+                  <div className="grid max-h-36 grid-cols-3 gap-1 overflow-y-auto rounded-xl border border-white/10 bg-black/15 p-2 sm:grid-cols-5">
+                    {monopolyBoard.slice(1).map(tile => (
+                      <div key={tile.id} className="truncate rounded-lg bg-white/5 px-2 py-1 text-[10px] text-white/75" title={`Kotak ${tile.id}: ${tile.name}`}>
+                        <b className="text-amber-200">{tile.id}</b> {tile.icon} {tile.name}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/15 p-3">
+                    <h4 className="mb-2 text-xs font-black text-white/80">Atur ekonomi properti</h4>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label className="space-y-1 text-[11px] font-bold text-white/70">
+                        Properti
+                        <select
+                          value={selectedEconomyTileId}
+                          onChange={event => {
+                            setEconomyTileId(Number(event.target.value));
+                            setEconomyPrice(null);
+                            setEconomyRent(null);
+                            setEconomyDevelopmentCost(null);
+                          }}
+                          className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-2 text-white"
+                        >
+                          {configurableTiles.map(tile => <option key={tile.id} value={tile.id}>Kotak {tile.id} — {tile.name}</option>)}
+                        </select>
+                      </label>
+                      {selectedEconomyTile && (
+                        <>
+                          <label className="space-y-1 text-[11px] font-bold text-white/70">
+                            Harga beli
+                            <input type="number" min="0" value={economyPrice ?? String(selectedEconomyTile.price ?? 0)} onChange={event => setEconomyPrice(event.target.value)} className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-2 text-white" />
+                          </label>
+                          {selectedEconomyTile.type !== 'utility' && (
+                            <label className="space-y-1 text-[11px] font-bold text-white/70">
+                              Sewa dasar
+                              <input type="number" min="0" value={economyRent ?? String(selectedEconomyTile.rentSchedule?.[0] ?? selectedEconomyTile.rent ?? 0)} onChange={event => setEconomyRent(event.target.value)} className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-2 text-white" />
+                            </label>
+                          )}
+                          {selectedEconomyTile.type === 'property' && (
+                            <label className="space-y-1 text-[11px] font-bold text-white/70">
+                              Biaya pengembangan
+                              <input type="number" min="0" value={economyDevelopmentCost ?? String(selectedEconomyTile.developmentCost ?? 0)} onChange={event => setEconomyDevelopmentCost(event.target.value)} className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-2 text-white" />
+                            </label>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    {selectedEconomyTile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateMonopolyTileEconomy(selectedEconomyTileId, {
+                            price: Number(economyPrice ?? selectedEconomyTile.price ?? 0),
+                            ...(selectedEconomyTile.type === 'utility' ? {} : {
+                              rent: Number(economyRent ?? selectedEconomyTile.rentSchedule?.[0] ?? selectedEconomyTile.rent ?? 0),
+                            }),
+                            ...(selectedEconomyTile.type === 'property' ? {
+                              developmentCost: Number(economyDevelopmentCost ?? selectedEconomyTile.developmentCost ?? 0),
+                            } : {}),
+                          });
+                          setEconomyPrice(null);
+                          setEconomyRent(null);
+                          setEconomyDevelopmentCost(null);
+                        }}
+                        className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
+                      >
+                        Simpan harga, sewa & pengembangan
+                      </button>
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-white/10 bg-black/15 p-3">
+                    <h4 className="mb-2 text-xs font-black text-white/80">Atur aturan pertandingan</h4>
+                    <p className="mb-2 text-[10px] text-white/55">Bobot dadu adalah peluang relatif: bobot lebih kecil membuat angka lebih sulit muncul. Bobot tidak perlu berjumlah 100.</p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                      {MONOPOLY_RULE_FIELDS.map(field => (
+                        <label key={field.key} className="space-y-1 text-[10px] font-bold text-white/70">
+                          {field.label}
+                          <input
+                            type="number"
+                            min={field.key.startsWith('diceWeight') ? 1 : 0}
+                            max={field.key.startsWith('diceWeight') ? 1000 : undefined}
+                            value={monopolyRules[field.key]}
+                            onChange={event => updateMonopolyRules({ [field.key]: Number(event.target.value) })}
+                            className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-1.5 text-white"
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="mb-6 rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4">
+              <h3 className="mb-3 font-black text-amber-100">⏱️ Durasi Monopoli</h3>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {([
+                  { label: '10 putaran', value: { type: 'rounds', value: 10 } },
+                  { label: '15 putaran', value: { type: 'rounds', value: 15 } },
+                  { label: '20 putaran', value: { type: 'rounds', value: 20 } },
+                  { label: 'Mode waktu', value: { type: 'time', value: 10 } },
+                ] as Array<{ label: string; value: MonopolyDuration }>).map(option => {
+                  const isSelected = monopolyDuration.type === option.value.type && monopolyDuration.value === option.value.value;
+                  return (
+                    <button
+                      key={option.label}
+                      onClick={() => setMonopolyDuration(option.value)}
+                      className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${isSelected ? 'border-amber-200 bg-amber-300/25 text-amber-100' : 'border-white/15 bg-white/5 text-white/70 hover:bg-white/10'}`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {monopolyDuration.type === 'time' && (
+                <label className="mt-3 flex items-center gap-3 text-xs text-white/70">
+                  Durasi pertandingan
+                  <select
+                    value={monopolyDuration.value}
+                    onChange={event => setMonopolyDuration({ type: 'time', value: Number(event.target.value) })}
+                    className="rounded-lg border border-white/15 bg-slate-900 px-3 py-2 text-white"
+                  >
+                    <option value={5}>5 menit</option>
+                    <option value={10}>10 menit</option>
+                    <option value={15}>15 menit</option>
+                    <option value={20}>20 menit</option>
+                  </select>
+                </label>
+              )}
+            </section>
+            </>
+          )}
+
           <button
             onClick={handlePlayGame}
-            disabled={teams.length === 0}
+            disabled={isMonopoly ? teams.length < 2 : teams.length === 0}
             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:opacity-50 text-white font-display text-xl py-4 rounded-2xl transition-all transform hover:scale-105 shadow-lg"
           >
-            🎮 Mulai Permainan!
+            {isMonopoly ? '🎲 Mulai Monopoli Petualang!' : '🎮 Mulai Permainan!'}
           </button>
+          {isMonopoly && teams.length < 2 && <p className="mt-2 text-center text-xs text-amber-200">Tambahkan minimal 2 kelompok untuk bermain.</p>}
         </motion.div>
       </div>
     );
@@ -386,6 +648,32 @@ export default function LandingPage() {
               🚀 Mulai Bermain!
             </motion.button>
           </div>
+
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-5 w-full max-w-2xl overflow-hidden rounded-3xl border border-amber-200/30 bg-gradient-to-r from-amber-500/20 via-emerald-500/15 to-cyan-500/20 p-5 text-left shadow-2xl backdrop-blur md:p-6"
+          >
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <div className="grid h-24 w-24 flex-shrink-0 grid-cols-3 grid-rows-3 rotate-3 gap-1 rounded-2xl border-4 border-amber-300/70 bg-emerald-950 p-1.5 shadow-xl">
+                {['🏰', '🏡', '❓', '🎁', '👑', '🪙', '🌳', '🌀', '🚩'].map((emoji, index) => (
+                  <span key={index} className="flex items-center justify-center rounded-md bg-amber-100 text-sm text-slate-900">{emoji}</span>
+                ))}
+              </div>
+              <div className="min-w-0 flex-1 text-center sm:text-left">
+                <div className="text-xs font-black tracking-[.22em] text-amber-200">MODE BARU</div>
+                <h2 className="font-display text-2xl text-white md:text-3xl">MONOPOLI PETUALANG</h2>
+                <p className="mt-1 text-sm text-white/70">Keliling papan, jawab kuis, beli wilayah, kumpulkan kekayaan, dan kuasai kerajaan.</p>
+              </div>
+              <button
+                onClick={() => { setIsMonopoly(true); setStep('teams'); }}
+                className="flex-shrink-0 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 px-6 py-3 font-display text-base text-slate-950 shadow-lg transition hover:scale-105 hover:brightness-110"
+              >
+                MAIN SEKARANG
+              </button>
+            </div>
+          </motion.section>
         </motion.div>
 
         {/* Game mode cards */}
