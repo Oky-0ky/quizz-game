@@ -33,7 +33,7 @@ const BG_TILES: BgTile[] = [
 const MONOPOLY_RULE_FIELDS: Array<{ key: keyof MonopolyRules; label: string }> = [
   { key: 'startingCash', label: 'Modal awal' },
   { key: 'goSalary', label: 'Gaji saat melewati GO' },
-  { key: 'bailCost', label: 'Biaya bebas penjara' },
+  { key: 'bailCost', label: 'Harga Kunci Bebas Penjara' },
   { key: 'correctAnswerReward', label: 'Hadiah jawaban benar' },
   { key: 'wrongAnswerPenalty', label: 'Hukuman jawaban salah' },
   { key: 'incomeTax', label: 'Income Tax' },
@@ -354,7 +354,7 @@ export default function LandingPage() {
                           </label>
                           {selectedEconomyTile.type !== 'utility' && (
                             <label className="space-y-1 text-[11px] font-bold text-white/70">
-                              Sewa dasar
+                              Pajak dasar
                               <input type="number" min="0" value={economyRent ?? String(selectedEconomyTile.rentSchedule?.[0] ?? selectedEconomyTile.rent ?? 0)} onChange={event => setEconomyRent(event.target.value)} className="w-full rounded-lg border border-white/15 bg-slate-950 px-2 py-2 text-white" />
                             </label>
                           )}
@@ -386,7 +386,7 @@ export default function LandingPage() {
                         }}
                         className="mt-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
                       >
-                        Simpan harga, sewa & pengembangan
+                        Simpan harga, pajak & pengembangan
                       </button>
                     )}
                   </div>

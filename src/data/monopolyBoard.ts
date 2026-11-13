@@ -43,7 +43,7 @@ export const MONOPOLY_BOARD: MonopolyTile[] = [
   { id: 7, type: 'chance', name: 'Chance', icon: '❔' },
   { id: 8, type: 'property', name: 'Singapore', country: 'Singapore', groupId: 'light-blue', groupColor: '#8ed6f5', price: 100, rent: 6, rentSchedule: [6, 30, 90, 270, 400, 550], developmentCost: 50, icon: '🌆' },
   { id: 9, type: 'property', name: 'Kuala Lumpur', country: 'Malaysia', groupId: 'light-blue', groupColor: '#8ed6f5', price: 120, rent: 8, rentSchedule: [8, 40, 100, 300, 450, 600], developmentCost: 50, icon: '🌇' },
-  { id: 10, type: 'jail', name: 'Jail / Just Visiting', icon: '🔒' },
+  { id: 10, type: 'jail', name: 'Penjara / Berkunjung', icon: '🔒' },
   { id: 11, type: 'property', name: 'Tokyo', country: 'Japan', groupId: 'pink', groupColor: '#e889b5', price: 140, rent: 10, rentSchedule: [10, 50, 150, 450, 625, 750], developmentCost: 100, icon: '🗼' },
   { id: 12, type: 'utility', name: 'Solar Energy', icon: '☀️', price: 150 },
   { id: 13, type: 'property', name: 'Kyoto', country: 'Japan', groupId: 'pink', groupColor: '#e889b5', price: 140, rent: 10, rentSchedule: [10, 50, 150, 450, 625, 750], developmentCost: 100, icon: '⛩️' },

@@ -5,7 +5,19 @@ import { MONOPOLY_QUESTIONS, MonopolyQuestion } from '@/data/monopolyQuestions';
 
 export type MonopolyItemId = 'jail_card' | 'rent_shield' | 'takeover_card' | 'bonus_coin';
 export type MonopolyDuration = { type: 'rounds'; value: 10 | 15 | 20 } | { type: 'time'; value: number };
-export type MonopolyTurnStage = 'ready' | 'moving' | 'action' | 'done';
+export type MonopolyTurnStage = 'ready' | 'moving' | 'action' | 'rescue' | 'done';
+
+export interface MonopolyRescue {
+  debtorId: string;
+  amount: number;
+  shortfall: number;
+  creditorId: string | null;
+  reason: string;
+  payments: Array<{ amount: number; creditorId: string | null; reason: string }>;
+  phase: 'choose' | 'approval';
+  helperId: string | null;
+  resumeStage: 'action' | 'done';
+}
 
 export interface MonopolyProperty {
   tileId: number;
@@ -20,6 +32,7 @@ export interface MonopolyTeam {
   avatar: string;
   position: number;
   coins: number;
+  loanDebt: number;
   properties: number[];
   inventory: Record<MonopolyItemId, number>;
   jailed: boolean;
@@ -93,6 +106,7 @@ export interface MonopolyGame {
   pendingBuy: boolean;
   pendingTakeoverOwner: string | null;
   pendingCard: MonopolyCardEvent | null;
+  pendingRescue: MonopolyRescue | null;
   log: MonopolyLogEntry[];
   winnerId: string | null;
   lastAnswer: { correct: boolean; message: string } | null;
@@ -103,6 +117,7 @@ interface MonopolyStore {
   rules: MonopolyRules;
   game: MonopolyGame | null;
   swapBoardTiles: (firstTileId: number, secondTileId: number) => void;
+  setBoardTileFromTemplate: (tileId: number, templateTileId: number) => void;
   resetBoard: () => void;
   updateTileEconomy: (tileId: number, values: Partial<Pick<MonopolyTile, 'price' | 'rent' | 'developmentCost'>>) => void;
   updateRules: (rules: Partial<MonopolyRules>) => void;
@@ -113,15 +128,19 @@ interface MonopolyStore {
   clearGame: () => void;
   startTurnQuiz: () => void;
   rollDice: () => void;
-  payBail: () => void;
+  buyJailKey: () => void;
   advanceMovement: () => void;
   answerQuestion: (answer: string) => void;
+  takeRescueLoan: () => void;
+  requestRescueHelp: (helperId: string) => void;
+  respondToRescueHelp: (approved: boolean) => void;
+  declareBankruptcy: () => void;
   buyProperty: () => void;
   declinePurchase: () => void;
   completeAction: () => void;
   upgradeProperty: () => void;
-  useJailCard: () => void;
-  startJailQuestion: () => void;
+  downgradeProperty: () => void;
+  useJailKey: () => void;
   useRentShield: () => void;
   useBonusCoin: () => void;
   useTakeoverCard: () => void;
@@ -132,10 +151,12 @@ interface MonopolyStore {
 }
 
 const ITEM_IDS: MonopolyItemId[] = ['jail_card', 'rent_shield', 'takeover_card', 'bonus_coin'];
+const REWARD_ITEM_IDS: MonopolyItemId[] = ['rent_shield', 'takeover_card', 'bonus_coin'];
 const BUILDING_NAMES = ['Tanpa bangunan', 'Rumah', 'Rumah II', 'Rumah III', 'Rumah IV', 'Hotel / Landmark'];
 const TRANSPORT_TYPES = ['rail', 'air', 'cruise', 'space'];
+const MINIMUM_PROPERTY_ECONOMY = 2000;
 const DEFAULT_RULES: MonopolyRules = {
-  startingCash: 1500,
+  startingCash: MINIMUM_PROPERTY_ECONOMY,
   goSalary: 200,
   bailCost: 50,
   correctAnswerReward: 20,
@@ -204,6 +225,24 @@ function currentTeam(game: MonopolyGame): MonopolyTeam {
   return game.teams.find(team => team.id === id)!;
 }
 
+function nearestJailTileId(game: MonopolyGame, position: number): number {
+  const jailTiles = game.board.filter(tile => tile.type === 'jail');
+  if (!jailTiles.length) return Math.min(10, game.board.length - 1);
+  return jailTiles.reduce((nearest, tile) => {
+    const distance = (tile.id - position + game.board.length) % game.board.length;
+    const nearestDistance = (nearest.id - position + game.board.length) % game.board.length;
+    return distance < nearestDistance ? tile : nearest;
+  }).id;
+}
+
+function receiveIncome(team: MonopolyTeam, amount: number): Pick<MonopolyTeam, 'coins' | 'loanDebt'> {
+  const debtPayment = Math.min(team.loanDebt, amount);
+  return {
+    coins: team.coins + amount - debtPayment,
+    loanDebt: team.loanDebt - debtPayment,
+  };
+}
+
 function bankruptTeam(game: MonopolyGame, debtorId: string, creditorId: string | null, reason: string): MonopolyGame {
   const debtor = game.teams.find(team => team.id === debtorId);
   if (!debtor || debtor.bankrupt) return game;
@@ -217,11 +256,11 @@ function bankruptTeam(game: MonopolyGame, debtorId: string, creditorId: string |
     for (const tileId of assets) delete properties[tileId];
   }
   const teams = game.teams.map(team => {
-    if (team.id === debtorId) return { ...team, coins: 0, properties: [], bankrupt: true };
+    if (team.id === debtorId) return { ...team, coins: 0, loanDebt: 0, properties: [], bankrupt: true };
     if (team.id === creditorId) {
       return {
         ...team,
-        coins: team.coins + debtor.coins,
+        ...receiveIncome(team, debtor.coins),
         properties: [...team.properties, ...assets],
       };
     }
@@ -241,35 +280,116 @@ function bankruptTeam(game: MonopolyGame, debtorId: string, creditorId: string |
     pendingRent: 0,
     pendingTakeoverOwner: null,
     pendingCard: null,
+    pendingRescue: null,
   };
   return addLog(next, debtorId, `Bangkrut: ${reason}. Aset dialihkan sesuai aturan.`);
 }
 
+function beginRescue(game: MonopolyGame, debtorId: string, creditorId: string | null, amount: number, reason: string): MonopolyGame {
+  const debtor = game.teams.find(team => team.id === debtorId);
+  if (!debtor) return bankruptTeam(game, debtorId, creditorId, `tidak mampu membayar ${reason}`);
+
+  const previousRescue = game.pendingRescue;
+  const totalAmount = previousRescue?.debtorId === debtorId
+    ? previousRescue.amount + amount
+    : amount;
+  const payments = previousRescue?.debtorId === debtorId
+    ? [...previousRescue.payments, { amount, creditorId, reason }]
+    : [{ amount, creditorId, reason }];
+  const rescue: MonopolyRescue = {
+    debtorId,
+    amount: totalAmount,
+    shortfall: Math.max(0, totalAmount - debtor.coins),
+    creditorId: previousRescue?.creditorId ?? creditorId,
+    reason: payments.map(payment => payment.reason).join(' dan '),
+    payments,
+    phase: previousRescue?.phase ?? 'choose',
+    helperId: previousRescue?.helperId ?? null,
+    resumeStage: previousRescue?.resumeStage ?? (game.stage === 'done' ? 'done' : 'action'),
+  };
+  return addLog({
+    ...game,
+    stage: 'rescue',
+    pendingRescue: rescue,
+  }, debtorId, `Saldo kurang ${rescue.shortfall} koin untuk ${reason}; pilih pinjaman atau minta bantuan.`);
+}
+
 function payRent(game: MonopolyGame, payerId: string, ownerId: string, amount: number): MonopolyGame {
   const payer = game.teams.find(team => team.id === payerId);
-  if (!payer || payer.coins < amount) {
-    return bankruptTeam(game, payerId, ownerId, `tidak mampu membayar sewa ${amount} koin`);
-  }
+  if (!payer) return bankruptTeam(game, payerId, ownerId, `tidak mampu membayar pajak properti ${amount} koin`);
+  if (payer.coins < amount) return beginRescue(game, payerId, ownerId, amount, `pajak properti ${amount} koin`);
   const teams = game.teams.map(team => {
     if (team.id === payerId) return { ...team, coins: team.coins - amount };
-    if (team.id === ownerId) return { ...team, coins: team.coins + amount };
+    if (team.id === ownerId) return { ...team, ...receiveIncome(team, amount) };
     return team;
   });
-  return addLog({ ...game, teams }, payerId, `Membayar sewa ${amount} koin kepada pemilik properti.`);
+  return addLog({ ...game, teams }, payerId, `Membayar pajak properti ${amount} koin kepada pemilik.`);
 }
 
 function payBank(game: MonopolyGame, payerId: string, amount: number, reason: string): MonopolyGame {
   const payer = game.teams.find(team => team.id === payerId);
-  if (!payer || payer.coins < amount) {
-    return bankruptTeam(game, payerId, null, `tidak mampu membayar ${reason} sebesar ${amount} koin`);
-  }
+  if (!payer) return bankruptTeam(game, payerId, null, `tidak mampu membayar ${reason} sebesar ${amount} koin`);
+  if (payer.coins < amount) return beginRescue(game, payerId, null, amount, reason);
   const teams = game.teams.map(team => team.id === payerId
     ? { ...team, coins: team.coins - amount }
     : team);
   return addLog({ ...game, teams }, payerId, `Membayar ${amount} koin untuk ${reason}.`);
 }
 
+function completeRescue(game: MonopolyGame, funding: 'loan' | 'help', helperId?: string): MonopolyGame {
+  const rescue = game.pendingRescue;
+  const debtor = rescue && game.teams.find(team => team.id === rescue.debtorId);
+  if (!rescue || !debtor || debtor.bankrupt) return game;
+
+  let teams = game.teams;
+  if (funding === 'loan') {
+    teams = teams.map(team => team.id === debtor.id
+      ? { ...team, coins: team.coins + rescue.shortfall, loanDebt: team.loanDebt + rescue.shortfall }
+      : team);
+  } else {
+    const helper = helperId && game.teams.find(team => team.id === helperId);
+    if (!helper || helper.bankrupt || helper.id === debtor.id || helper.coins < rescue.shortfall) return game;
+    teams = game.teams.map(team => {
+      if (team.id === debtor.id) return { ...team, coins: team.coins + rescue.shortfall };
+      if (team.id === helper.id) return { ...team, coins: team.coins - rescue.shortfall };
+      return team;
+    });
+  }
+
+  const fundedGame = { ...game, teams };
+  const paidGame = rescue.payments.reduce((currentGame, payment) => payment.creditorId
+    ? payRent(currentGame, rescue.debtorId, payment.creditorId, payment.amount)
+    : payBank(currentGame, rescue.debtorId, payment.amount, payment.reason), fundedGame);
+  const resumedGame = {
+    ...paidGame,
+    stage: rescue.resumeStage,
+    pendingRescue: null,
+    lastAnswer: game.lastAnswer
+      ? {
+        ...game.lastAnswer,
+        message: funding === 'loan'
+          ? `Tagihan terbayar dengan pinjaman ${rescue.shortfall} koin.`
+          : 'Tagihan terbayar dengan bantuan pemain lain.',
+      }
+      : null,
+  };
+  return addLog(resumedGame, rescue.debtorId, funding === 'loan'
+    ? `Menerima pinjaman ${rescue.shortfall} koin untuk menutup kekurangan; sisa pinjaman ${debtor.loanDebt + rescue.shortfall} koin.`
+    : `Menerima bantuan ${rescue.shortfall} koin dari ${game.teams.find(team => team.id === helperId)?.name ?? 'pemain lain'}.`);
+}
+
 function finishAction(game: MonopolyGame): MonopolyGame {
+  if (game.pendingRescue) {
+    return {
+      ...game,
+      stage: 'rescue',
+      activeQuestion: null,
+      questionPurpose: null,
+      pendingBuy: false,
+      pendingRent: 0,
+      pendingRescue: { ...game.pendingRescue, resumeStage: 'done' },
+    };
+  }
   return {
     ...game,
     stage: 'done',
@@ -318,12 +438,41 @@ function startMovement(
 
 function updateTeam(game: MonopolyGame, updated: MonopolyTeam): MonopolyTeam[] {
   return game.teams.map(team => team.id === updated.id
-    ? { ...updated, history: team.history }
+    ? {
+      ...updated,
+      ...receiveIncome(team, Math.max(0, updated.coins - team.coins)),
+      history: team.history,
+    }
     : team);
 }
 
 function isPurchasable(tile: MonopolyTile): boolean {
   return tile.type === 'property' || tile.type === 'utility' || TRANSPORT_TYPES.includes(tile.type);
+}
+
+function enforceMinimumEconomy(tile: MonopolyTile): MonopolyTile {
+  if (!isPurchasable(tile)) return tile;
+
+  const baseRent = tile.rentSchedule?.[0] ?? tile.rent;
+  const rentSchedule = tile.rentSchedule?.map(rent => {
+    const minimumRent = Math.max(MINIMUM_PROPERTY_ECONOMY, baseRent ?? 0);
+    const scaledRent = baseRent ? Math.round(rent * minimumRent / baseRent) : rent;
+    return Math.max(MINIMUM_PROPERTY_ECONOMY, scaledRent);
+  });
+
+  return {
+    ...tile,
+    price: Math.max(MINIMUM_PROPERTY_ECONOMY, tile.price ?? 0),
+    ...(baseRent === undefined ? {} : { rent: Math.max(MINIMUM_PROPERTY_ECONOMY, baseRent) }),
+    ...(rentSchedule ? { rentSchedule } : {}),
+    ...(tile.type === 'property'
+      ? { developmentCost: Math.max(MINIMUM_PROPERTY_ECONOMY, tile.developmentCost ?? 0) }
+      : {}),
+  };
+}
+
+function enforceBoardEconomyMinimum(board: MonopolyTile[]): MonopolyTile[] {
+  return board.map(enforceMinimumEconomy);
 }
 
 function getRent(game: MonopolyGame, tile: MonopolyTile, property: MonopolyProperty): number {
@@ -361,7 +510,7 @@ function processLanding(game: MonopolyGame, tileId: number): MonopolyGame {
       const rent = getRent(next, tile, property);
       next.pendingRent = rent;
       next.pendingTakeoverOwner = property.ownerId;
-      next = addLog(next, team.id, `Tagihan sewa ${rent} koin di ${tile.name}; pilih kuis sulit untuk diskon atau bayar penuh.`);
+      next = addLog(next, team.id, `Tagihan pajak properti ${rent} koin di ${tile.name}; pilih kuis sulit untuk diskon atau bayar penuh.`);
     } else if (!property) {
       return { ...next, pendingBuy: true };
     } else {
@@ -390,8 +539,8 @@ function processLanding(game: MonopolyGame, tileId: number): MonopolyGame {
       next.teams = updateTeam(next, { ...team, position: 0, coins: team.coins + game.rules.goSalary });
       next.pendingCard = { type: cardType, message: `Langsung menuju GO dan menerima gaji ${game.rules.goSalary} koin.` };
     } else if (cardType === 'chance') {
-      next.teams = updateTeam(next, { ...team, position: 10, jailed: true, jailTurns: 0 });
-      next.pendingCard = { type: cardType, message: 'Petugas mengantar ke penjara. Giliran berikutnya gunakan dadu, kartu, atau bayar uang jaminan.' };
+      next.teams = updateTeam(next, { ...team, position: nearestJailTileId(next, team.position), jailed: true, jailTurns: 0 });
+      next.pendingCard = { type: cardType, message: 'Petugas mengantar ke penjara. Beli Kunci Bebas Penjara di Toko Penjara untuk keluar.' };
     } else if (cardRoll === 0) {
       next.teams = updateTeam(next, { ...team, coins: team.coins + game.rules.communityReward });
       next.pendingCard = { type: cardType, message: `Dana komunitas memberi bonus ${game.rules.communityReward} koin.` };
@@ -410,7 +559,7 @@ function processLanding(game: MonopolyGame, tileId: number): MonopolyGame {
       next.teams = updateTeam(next, { ...team, position: 0, coins: team.coins + game.rules.goSalary });
       next.pendingCard = { type: cardType, message: `Kembali ke GO dan menerima gaji ${game.rules.goSalary} koin.` };
     }
-    next.stage = 'action';
+    if (next.stage !== 'rescue') next.stage = 'action';
     return addLog(next, team.id, `${tile.name}: ${next.pendingCard.message}`);
   }
   const question = randomQuestion(next.usedQuestionIds, questionPurpose === 'rent' ? 'hard' : undefined);
@@ -429,7 +578,7 @@ function resolveAnsweredTile(game: MonopolyGame, tileId: number): MonopolyGame {
 
   if (tile.type === 'reward') {
     const reward = Math.random() < 0.65 ? 'coins' : 'item';
-    const itemId = ITEM_IDS[Math.floor(Math.random() * ITEM_IDS.length)];
+    const itemId = REWARD_ITEM_IDS[Math.floor(Math.random() * REWARD_ITEM_IDS.length)];
     const updatedTeam = reward === 'coins'
       ? { ...team, coins: team.coins + 30 }
       : { ...team, inventory: { ...team.inventory, [itemId]: team.inventory[itemId] + 1 } };
@@ -439,7 +588,7 @@ function resolveAnsweredTile(game: MonopolyGame, tileId: number): MonopolyGame {
     const taxAmount = tile.name === 'Income Tax' ? game.rules.incomeTax : tile.name === 'Super Tax' ? game.rules.superTax : tile.price ?? 20;
     next = payBank(next, team.id, taxAmount, `pajak di ${tile.name}`);
   } else if (tile.type === 'goToJail') {
-    const updatedTeam = { ...team, position: 10, jailed: true, jailTurns: 0 };
+    const updatedTeam = { ...team, position: nearestJailTileId(next, team.position), jailed: true, jailTurns: 0 };
     next = { ...next, teams: updateTeam(next, updatedTeam) };
     next = addLog(next, team.id, 'Masuk penjara; pion dipindahkan ke kotak Jail.');
   } else if (tile.type === 'portal') {
@@ -461,7 +610,7 @@ function settle(game: MonopolyGame): MonopolyGame {
       const property = game.properties[id];
       const tile = game.board[id];
       return total + (tile.price ?? 0) + (property?.buildingLevel ?? 0) * (tile.developmentCost ?? 0);
-    }, 0);
+    }, 0) - team.loanDebt;
     return wealth(b) - wealth(a) || b.quizCorrect - a.quizCorrect;
   });
   return { ...game, status: 'finished', winnerId: ranked[0]?.id ?? null, stage: 'done' };
@@ -478,6 +627,7 @@ function makeInitialGame(
     id: `monopoly-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
     position: 0,
     coins: rules.startingCash,
+    loanDebt: 0,
     properties: [],
     inventory: Object.fromEntries(ITEM_IDS.map(item => [item, 0])) as Record<MonopolyItemId, number>,
     jailed: false,
@@ -521,6 +671,7 @@ function makeInitialGame(
     pendingBuy: false,
     pendingTakeoverOwner: null,
     pendingCard: null,
+    pendingRescue: null,
     log: [],
     winnerId: null,
     lastAnswer: null,
@@ -532,9 +683,12 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
   if (!savedGame || !Array.isArray(savedGame.teams) || !Array.isArray(savedGame.order)) return null;
   const savedBoard = Array.isArray(savedGame.board) ? savedGame.board : [];
   const restoredRules = { ...DEFAULT_RULES, ...rules, ...savedGame.rules };
+  restoredRules.startingCash = Math.max(MINIMUM_PROPERTY_ECONOMY, restoredRules.startingCash);
   const teams = savedGame.teams.map(team => ({
     ...team,
+    inventory: { ...team.inventory, jail_card: 0 },
     bankrupt: team.bankrupt ?? false,
+    loanDebt: team.loanDebt ?? 0,
     jailTurns: team.jailTurns ?? 0,
     quizCorrect: team.quizCorrect ?? 0,
     quizIncorrect: team.quizIncorrect ?? 0,
@@ -542,12 +696,16 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
   if (savedBoard.length === board.length && savedBoard[0]?.type === 'go') {
     return {
       ...savedGame,
-      board: savedBoard,
+      ...(savedGame.questionPurpose === 'jail'
+        ? { stage: 'ready' as const, activeQuestion: null, questionPurpose: null, lastAnswer: null }
+        : {}),
+      board: enforceBoardEconomyMinimum(savedBoard),
       rules: restoredRules,
       teams,
       diceTotal: savedGame.diceTotal ?? null,
       extraTurn: savedGame.extraTurn ?? false,
       consecutiveDoubles: savedGame.consecutiveDoubles ?? 0,
+      pendingRescue: savedGame.pendingRescue ?? null,
     };
   }
 
@@ -590,6 +748,7 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
     pendingBuy: false,
     pendingTakeoverOwner: null,
     pendingCard: null,
+    pendingRescue: null,
     lastAnswer: null,
   };
   return savedGame.status === 'playing' && !currentTeam(restoredGame).jailed
@@ -598,7 +757,7 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
 }
 
 export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
-  board: MONOPOLY_BOARD,
+  board: enforceBoardEconomyMinimum(MONOPOLY_BOARD),
   rules: DEFAULT_RULES,
   game: null,
 
@@ -622,19 +781,45 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
       }),
     });
   },
-  resetBoard: () => set({ board: MONOPOLY_BOARD }),
+  setBoardTileFromTemplate: (tileId, templateTileId) => {
+    const board = get().board;
+    const template = MONOPOLY_BOARD[templateTileId];
+    if (
+      !Number.isInteger(tileId) ||
+      !Number.isInteger(templateTileId) ||
+      tileId <= 0 ||
+      tileId >= board.length ||
+      templateTileId <= 0 ||
+      !template ||
+      template.type === 'go'
+    ) return;
+    set({
+      board: board.map(tile => tile.id === tileId
+        ? enforceMinimumEconomy({ ...template, id: tileId })
+        : tile),
+    });
+  },
+  resetBoard: () => set({ board: enforceBoardEconomyMinimum(MONOPOLY_BOARD) }),
   updateTileEconomy: (tileId, values) => {
     const board = get().board;
     const tile = board[tileId];
     if (!tile || !isPurchasable(tile)) return;
     const safeValues = Object.fromEntries(
-      Object.entries(values).map(([key, value]) => [key, Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0]),
+      Object.entries(values).map(([key, value]) => [
+        key,
+        Number.isFinite(value) ? Math.max(MINIMUM_PROPERTY_ECONOMY, Math.floor(value)) : MINIMUM_PROPERTY_ECONOMY,
+      ]),
     );
     const oldRent = tile.rentSchedule?.[0] ?? tile.rent ?? 0;
-    const newRent = values.rent;
+    const newRent = values.rent === undefined
+      ? undefined
+      : Math.max(MINIMUM_PROPERTY_ECONOMY, Math.floor(values.rent));
     const rentSchedule = newRent === undefined || !tile.rentSchedule
       ? tile.rentSchedule
-      : tile.rentSchedule.map(rent => oldRent ? Math.round(rent * newRent / oldRent) : rent);
+      : tile.rentSchedule.map(rent => Math.max(
+        MINIMUM_PROPERTY_ECONOMY,
+        oldRent ? Math.round(rent * newRent / oldRent) : rent,
+      ));
     set({
       board: board.map(boardTile => boardTile.id === tileId
         ? { ...boardTile, ...safeValues, ...(rentSchedule ? { rentSchedule } : {}) }
@@ -647,7 +832,9 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
         key,
         key.startsWith('diceWeight')
           ? Number.isFinite(value) ? Math.min(1000, Math.max(1, Math.floor(value))) : 1
-          : Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0,
+          : Number.isFinite(value)
+            ? Math.max(key === 'startingCash' ? MINIMUM_PROPERTY_ECONOMY : 0, Math.floor(value))
+            : key === 'startingCash' ? MINIMUM_PROPERTY_ECONOMY : 0,
       ]),
     ) as Partial<MonopolyRules>;
     set({ rules: { ...get().rules, ...updatedRules } });
@@ -669,50 +856,12 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
     const game = get().game;
     if (!game || game.status !== 'playing' || game.stage !== 'ready') return;
     const team = currentTeam(game);
+    if (team.jailed) return;
     const firstDie = rollDie(game.rules);
     const secondDie = rollDie(game.rules);
     const isDouble = firstDie === secondDie;
-    if (team.jailed) {
-      if (isDouble) {
-        const releasedTeam = { ...team, jailed: false, jailTurns: 0 };
-        const next = { ...game, teams: updateTeam(game, releasedTeam) };
-        set({ game: startMovement(next, releasedTeam, firstDie, secondDie, false) });
-      } else {
-        const jailTurns = team.jailTurns + 1;
-        if (jailTurns >= 3 && team.coins >= game.rules.bailCost) {
-          const releasedTeam = {
-            ...team,
-            coins: team.coins - game.rules.bailCost,
-            jailed: false,
-            jailTurns: 0,
-          };
-          const next = {
-            ...game,
-            teams: updateTeam(game, releasedTeam),
-            lastAnswer: { correct: false, message: `Gagal tiga kali; membayar ${game.rules.bailCost} koin dan bergerak.` },
-          };
-          set({ game: startMovement(addLog(next, team.id, `Membayar ${game.rules.bailCost} koin setelah tiga kali gagal keluar dari penjara.`), releasedTeam, firstDie, secondDie, false) });
-          return;
-        }
-        const updatedTeam = { ...team, jailTurns };
-        const next = {
-          ...game,
-          teams: updateTeam(game, updatedTeam),
-          stage: 'done' as const,
-          hasRolled: true,
-          diceResult: firstDie,
-          bonusDiceResult: secondDie,
-          diceTotal: firstDie + secondDie,
-          extraTurn: false,
-          lastAnswer: { correct: false, message: 'Belum mendapatkan angka kembar; tetap di penjara.' },
-        };
-        set({ game: addLog(next, team.id, 'Gagal keluar dari penjara dengan dadu; giliran berakhir.') });
-      }
-      return;
-    }
-
     if (isDouble && game.consecutiveDoubles >= 2) {
-      const jailedTeam = { ...team, position: 10, jailed: true, jailTurns: 0 };
+      const jailedTeam = { ...team, position: nearestJailTileId(game, team.position), jailed: true, jailTurns: 0 };
       const next = {
         ...game,
         teams: updateTeam(game, jailedTeam),
@@ -731,23 +880,19 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
     const next = { ...game, consecutiveDoubles: isDouble ? game.consecutiveDoubles + 1 : 0 };
     set({ game: startMovement(next, team, firstDie, secondDie, isDouble) });
   },
-  payBail: () => {
+  buyJailKey: () => {
     const game = get().game;
     if (!game || game.stage !== 'ready' || game.status !== 'playing') return;
     const team = currentTeam(game);
-    if (!team.jailed || team.coins < game.rules.bailCost) return;
-    const releasedTeam = {
+    const price = game.rules.bailCost;
+    if (!team.jailed || team.coins < price || team.inventory.jail_card > 0) return;
+    const updatedTeam = {
       ...team,
-      coins: team.coins - game.rules.bailCost,
-      jailed: false,
-      jailTurns: 0,
+      coins: team.coins - price,
+      inventory: { ...team.inventory, jail_card: 1 },
     };
-    const next = {
-      ...game,
-      teams: updateTeam(game, releasedTeam),
-      consecutiveDoubles: 0,
-    };
-    set({ game: startTurnQuestion(addLog(next, team.id, `Membayar ${game.rules.bailCost} koin untuk bebas dari penjara.`)) });
+    const next = { ...game, teams: updateTeam(game, updatedTeam) };
+    set({ game: addLog(next, team.id, `Membeli Kunci Bebas Penjara seharga ${price} koin.`) });
   },
   advanceMovement: () => {
     const game = get().game;
@@ -819,51 +964,53 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
       const ownerId = game.pendingTakeoverOwner;
       const rent = correct ? Math.ceil(game.pendingRent / 2) : game.pendingRent;
       if (ownerId) next = payRent(next, team.id, ownerId, rent);
-      else next = bankruptTeam(next, team.id, null, 'pemilik properti tidak tersedia untuk pembayaran sewa');
+      else next = bankruptTeam(next, team.id, null, 'pemilik properti tidak tersedia untuk pembayaran pajak');
       next = {
         ...next,
         lastAnswer: {
           correct,
-          message: correct
-            ? `Jawaban benar! Sewa turun 50% menjadi ${rent} koin.`
-            : `Belum tepat. Sewa penuh ${rent} koin telah dibayar. Jawaban: ${question.answer}`,
+          message: next.pendingRescue
+            ? `Dana kurang ${next.pendingRescue.shortfall} koin untuk membayar pajak properti. Pilih pinjaman atau minta bantuan.`
+            : correct
+              ? `Jawaban benar! Pajak properti turun 50% menjadi ${rent} koin.`
+              : `Belum tepat. Pajak properti penuh ${rent} koin telah dibayar. Jawaban: ${question.answer}`,
         },
       };
-    } else if (game.questionPurpose === 'jail') {
-      if (correct) {
-        const updatedTeam = { ...team, jailed: false, jailTurns: 0 };
-        next.teams = updateTeam(next, updatedTeam);
-        next = addLog(next, team.id, 'Berhasil menjawab kuis penjara dan bebas.');
-        next = { ...next, stage: 'ready' };
-      } else {
-        next = finishAction(next);
-        next = addLog(next, team.id, 'Belum berhasil keluar dari penjara; giliran berakhir.');
-      }
     } else if (game.questionPurpose === 'takeover') {
       const property = game.pendingTileId === null ? null : game.properties[game.pendingTileId];
       const tile = game.pendingTileId === null ? null : game.board[game.pendingTileId];
       const price = (tile?.price ?? 0) * 2;
       const ownerId = game.pendingTakeoverOwner;
-      if (!ownerId || team.coins < game.pendingRent) {
-        next = bankruptTeam(next, team.id, ownerId, `tidak mampu membayar sewa ${game.pendingRent} koin`);
+      if (!ownerId) {
+        next = bankruptTeam(next, team.id, null, 'pemilik properti tidak tersedia untuk pembayaran pajak');
       } else {
         next = payRent(next, team.id, ownerId, game.pendingRent);
-        const buyer = currentTeam(next);
-        if (correct && property && property.buildingLevel < 5 && tile && buyer.coins >= price) {
-          const updatedTeam = { ...buyer, coins: buyer.coins - price, properties: [...buyer.properties, property.tileId] };
-          next.teams = updateTeam(next, updatedTeam).map(other => other.id === ownerId
-            ? { ...other, coins: other.coins + price, properties: other.properties.filter(id => id !== property.tileId) }
-            : other);
-          next.properties = { ...next.properties, [property.tileId]: { ...property, ownerId: team.id } };
-          next = addLog(next, team.id, `Mengambil alih ${tile.name} dengan membayar ${price} koin (2x harga properti).`);
-          next = finishAction(next);
-          next = addLog(next, team.id, `Kuis pengambilalihan benar; ${tile.name} berhasil diambil alih.`);
+        if (next.pendingRescue) {
+          next = {
+            ...next,
+            lastAnswer: {
+              correct,
+              message: `Dana kurang ${next.pendingRescue.shortfall} koin untuk membayar pajak properti. Pilih pinjaman atau minta bantuan.`,
+            },
+          };
         } else {
-          const message = correct
-            ? `Sewa dibayar, tetapi diperlukan ${price} koin untuk takeover.`
-            : `Jawaban takeover salah; sewa ${game.pendingRent} koin tetap dibayar.`;
-          next = { ...next, stage: 'action', lastAnswer: { correct: false, message } };
-          next = addLog(next, team.id, message);
+          const buyer = currentTeam(next);
+          if (correct && property && property.buildingLevel < 5 && tile && buyer.coins >= price) {
+            const updatedTeam = { ...buyer, coins: buyer.coins - price, properties: [...buyer.properties, property.tileId] };
+            next.teams = updateTeam(next, updatedTeam).map(other => other.id === ownerId
+              ? { ...other, ...receiveIncome(other, price), properties: other.properties.filter(id => id !== property.tileId) }
+              : other);
+            next.properties = { ...next.properties, [property.tileId]: { ...property, ownerId: team.id } };
+            next = addLog(next, team.id, `Mengambil alih ${tile.name} dengan membayar ${price} koin (2x harga properti).`);
+            next = finishAction(next);
+            next = addLog(next, team.id, `Kuis pengambilalihan benar; ${tile.name} berhasil diambil alih.`);
+          } else {
+            const message = correct
+              ? `Pajak properti dibayar, tetapi diperlukan ${price} koin untuk takeover.`
+              : `Jawaban takeover salah; pajak properti ${game.pendingRent} koin tetap dibayar.`;
+            next = { ...next, stage: 'action', lastAnswer: { correct: false, message } };
+            next = addLog(next, team.id, message);
+          }
         }
       }
     }
@@ -878,6 +1025,44 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
       next = payBank(next, team.id, game.rules.wrongAnswerPenalty, 'penalti jawaban salah');
     }
     set({ game: next });
+  },
+  takeRescueLoan: () => {
+    const game = get().game;
+    if (!game || game.status !== 'playing' || game.stage !== 'rescue' || game.pendingRescue?.phase !== 'choose') return;
+    set({ game: completeRescue(game, 'loan') });
+  },
+  requestRescueHelp: helperId => {
+    const game = get().game;
+    const rescue = game?.pendingRescue;
+    if (!game || game.status !== 'playing' || game.stage !== 'rescue' || rescue?.phase !== 'choose') return;
+    const helper = game.teams.find(team => team.id === helperId);
+    if (!helper || helper.bankrupt || helper.id === rescue.debtorId || helper.coins < rescue.shortfall) return;
+    const next = {
+      ...game,
+      pendingRescue: { ...rescue, phase: 'approval' as const, helperId },
+    };
+    set({ game: addLog(next, rescue.debtorId, `Meminta bantuan ${helper.name} sebesar ${rescue.shortfall} koin.`) });
+  },
+  respondToRescueHelp: approved => {
+    const game = get().game;
+    const rescue = game?.pendingRescue;
+    const helper = rescue?.helperId && game?.teams.find(team => team.id === rescue.helperId);
+    if (!game || game.status !== 'playing' || game.stage !== 'rescue' || rescue?.phase !== 'approval' || !helper) return;
+    if (approved) {
+      set({ game: completeRescue(game, 'help', helper.id) });
+      return;
+    }
+    const next = {
+      ...game,
+      pendingRescue: { ...rescue, phase: 'choose' as const, helperId: null },
+    };
+    set({ game: addLog(next, helper.id, `Menolak permintaan bantuan dari ${game.teams.find(team => team.id === rescue.debtorId)?.name ?? 'pemain'}.`) });
+  },
+  declareBankruptcy: () => {
+    const game = get().game;
+    const rescue = game?.pendingRescue;
+    if (!game || game.status !== 'playing' || game.stage !== 'rescue' || !rescue) return;
+    set({ game: bankruptTeam(game, rescue.debtorId, rescue.creditorId, `tidak dapat membayar ${rescue.amount} koin untuk ${rescue.reason}`) });
   },
   buyProperty: () => {
     const game = get().game;
@@ -917,7 +1102,7 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
   },
   upgradeProperty: () => {
     const game = get().game;
-    if (!game || game.stage !== 'action' || game.pendingTileId === null) return;
+    if (!game || game.status !== 'playing' || game.stage !== 'action' || game.activeQuestion || game.pendingBuy || game.pendingCard || game.pendingTileId === null) return;
     const team = currentTeam(game);
     const property = game.properties[game.pendingTileId];
     const tile = game.board[game.pendingTileId];
@@ -935,32 +1120,39 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
       teams: updateTeam(game, updatedTeam),
       properties: { ...game.properties, [property.tileId]: { ...property, buildingLevel: nextLevel } },
     };
-    set({ game: finishAction(addLog(next, team.id, `Membangun ${BUILDING_NAMES[nextLevel]} di ${game.board[property.tileId].name} seharga ${cost} koin.`)) });
+    const newTax = getRent(game, tile, { ...property, buildingLevel: nextLevel });
+    set({ game: finishAction(addLog(next, team.id, `Membangun ${BUILDING_NAMES[nextLevel]} di ${tile.name} seharga ${cost} koin. Pajak properti sekarang ${newTax} koin.`)) });
   },
-  useJailCard: () => {
+  downgradeProperty: () => {
+    const game = get().game;
+    if (!game || game.status !== 'playing' || game.stage !== 'action' || game.activeQuestion || game.pendingBuy || game.pendingCard || game.pendingTileId === null) return;
+    const team = currentTeam(game);
+    const property = game.properties[game.pendingTileId];
+    const tile = game.board[game.pendingTileId];
+    if (!property || !tile || tile.type !== 'property' || !tile.groupId || property.ownerId !== team.id || property.buildingLevel <= 0) return;
+    const groupProperties = game.board.filter(boardTile => boardTile.type === 'property' && boardTile.groupId === tile.groupId);
+    if (!groupProperties.every(groupTile => game.properties[groupTile.id]?.ownerId === team.id)) return;
+    const groupLevels = groupProperties.map(groupTile => game.properties[groupTile.id]?.buildingLevel ?? 0);
+    if (property.buildingLevel !== Math.max(...groupLevels)) return;
+    const nextLevel = (property.buildingLevel - 1) as 0 | 1 | 2 | 3 | 4;
+    const refund = Math.floor((tile.developmentCost ?? 0) / 2);
+    const updatedTeam = { ...team, coins: team.coins + refund };
+    const next = {
+      ...game,
+      teams: updateTeam(game, updatedTeam),
+      properties: { ...game.properties, [property.tileId]: { ...property, buildingLevel: nextLevel } },
+    };
+    const newTax = getRent(game, tile, { ...property, buildingLevel: nextLevel });
+    set({ game: finishAction(addLog(next, team.id, `Menjual satu tingkat bangunan di ${tile.name}; menerima kembali ${refund} koin. Pajak properti sekarang ${newTax} koin.`)) });
+  },
+  useJailKey: () => {
     const game = get().game;
     if (!game || game.stage !== 'ready') return;
     const team = currentTeam(game);
     if (!team.jailed || team.inventory.jail_card < 1) return;
     const updatedTeam = { ...team, jailed: false, jailTurns: 0, inventory: { ...team.inventory, jail_card: team.inventory.jail_card - 1 } };
-    const next = startTurnQuestion(addLog({ ...game, teams: updateTeam(game, updatedTeam) }, team.id, 'Menggunakan Kartu Bebas Penjara. Jawab kuis untuk melempar dadu.'));
+    const next = startTurnQuestion(addLog({ ...game, teams: updateTeam(game, updatedTeam) }, team.id, 'Menggunakan Kunci Bebas Penjara. Jawab kuis untuk melempar dadu.'));
     set({ game: next });
-  },
-  startJailQuestion: () => {
-    const game = get().game;
-    if (!game || game.stage !== 'ready' || game.status !== 'playing') return;
-    const team = currentTeam(game);
-    if (!team.jailed) return;
-    const question = randomQuestion(game.usedQuestionIds);
-    set({
-      game: {
-        ...game,
-        stage: 'action',
-        activeQuestion: question,
-        questionPurpose: 'jail',
-        usedQuestionIds: [...game.usedQuestionIds, question.id],
-      },
-    });
   },
   useRentShield: () => {
     const game = get().game;
@@ -973,7 +1165,7 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
       teams: updateTeam(game, updatedTeam),
       lastAnswer: null,
     };
-    set({ game: finishAction(addLog(next, team.id, `Menggunakan Perisai Sewa untuk membatalkan tagihan ${game.pendingRent} koin.`)) });
+    set({ game: finishAction(addLog(next, team.id, `Menggunakan Perisai Sewa untuk membatalkan pajak properti ${game.pendingRent} koin.`)) });
   },
   useBonusCoin: () => {
     const game = get().game;
@@ -1020,7 +1212,7 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
     const next = {
       ...game,
       teams: updateTeam(game, updatedTeam).map(other => other.id === ownerId
-        ? { ...other, coins: other.coins + price, properties: other.properties.filter(id => id !== property.tileId) }
+        ? { ...other, ...receiveIncome(other, price), properties: other.properties.filter(id => id !== property.tileId) }
         : other),
       properties: { ...game.properties, [property.tileId]: { ...property, ownerId: team.id } },
     };
@@ -1070,21 +1262,24 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
   },
   tickTime: () => {
     const game = get().game;
-    if (!game || game.status !== 'playing' || game.duration.type !== 'time' || game.timeRemaining === null) return;
+    if (!game || game.status !== 'playing' || game.stage === 'rescue' || game.duration.type !== 'time' || game.timeRemaining === null) return;
     const remaining = Math.max(0, game.timeRemaining - 1);
     set({ game: settle({ ...game, timeRemaining: remaining }) });
   },
 }), {
   name: 'monopoli-petualang',
   partialize: state => ({ board: state.board, rules: state.rules, game: state.game }),
-  version: 4,
+  version: 7,
   migrate: persistedState => {
     const persisted = persistedState as Partial<MonopolyStore>;
     const savedBoard = persisted.board;
-    const board = Array.isArray(savedBoard) && savedBoard.length === MONOPOLY_BOARD.length && savedBoard[0]?.type === 'go'
-      ? savedBoard
-      : MONOPOLY_BOARD;
+    const board = enforceBoardEconomyMinimum(
+      Array.isArray(savedBoard) && savedBoard.length === MONOPOLY_BOARD.length && savedBoard[0]?.type === 'go'
+        ? savedBoard
+        : MONOPOLY_BOARD,
+    );
     const rules = { ...DEFAULT_RULES, ...persisted.rules };
+    rules.startingCash = Math.max(MINIMUM_PROPERTY_ECONOMY, rules.startingCash);
     return {
       board,
       rules,

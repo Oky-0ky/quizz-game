@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/store/gameStore';
+import PrisonIllustration from '@/components/board/PrisonIllustration';
 import {
   MonopolyItemId,
   MonopolyRules,
@@ -10,19 +11,25 @@ import {
   monopolyBuildingName,
   useMonopolyStore,
 } from '@/store/monopolyStore';
-import { getMonopolyGridPosition } from '@/data/monopolyBoard';
+import { getMonopolyGridPosition, MONOPOLY_BOARD, MonopolyTile } from '@/data/monopolyBoard';
 
 const ITEM_DETAILS: Record<MonopolyItemId, { name: string; emoji: string }> = {
-  jail_card: { name: 'Kartu Bebas Penjara', emoji: '🗝️' },
+  jail_card: { name: 'Kunci Bebas Penjara', emoji: '🗝️' },
   rent_shield: { name: 'Perisai Sewa', emoji: '🛡️' },
   takeover_card: { name: 'Kartu Pengambilalihan', emoji: '⚔️' },
   bonus_coin: { name: 'Koin Bonus', emoji: '🪙' },
 };
 
+const FEATURE_TILE_TEMPLATES = MONOPOLY_BOARD
+  .filter(tile => ['jail', 'goToJail', 'chance', 'community', 'tax', 'freeParking'].includes(tile.type))
+  .filter((tile, index, tiles) => tiles.findIndex(candidate => (
+    candidate.type === tile.type && candidate.name === tile.name
+  )) === index);
+
 const ADMIN_RULE_FIELDS: Array<{ key: keyof MonopolyRules; label: string }> = [
   { key: 'startingCash', label: 'Modal awal' },
   { key: 'goSalary', label: 'Gaji GO' },
-  { key: 'bailCost', label: 'Biaya bebas penjara' },
+  { key: 'bailCost', label: 'Harga Kunci Bebas Penjara' },
   { key: 'correctAnswerReward', label: 'Hadiah jawaban benar' },
   { key: 'wrongAnswerPenalty', label: 'Hukuman jawaban salah' },
   { key: 'incomeTax', label: 'Income Tax' },
@@ -44,46 +51,67 @@ const formatDuration = (seconds: number | null) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
+function adminTileName(tile: MonopolyTile) {
+  if (tile.type === 'jail') return 'Penjara / Berkunjung';
+  if (tile.type === 'goToJail') return 'Masuk Penjara';
+  return tile.name;
+}
+
+function teamColorTint(color: string, opacity: number) {
+  const match = /^#([\da-f]{6})$/i.exec(color);
+  if (!match) return undefined;
+  const value = Number.parseInt(match[1], 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+}
+
 function wealth(team: MonopolyTeam, game: NonNullable<ReturnType<typeof useMonopolyStore.getState>['game']>) {
   return team.coins + team.properties.reduce((total, tileId) => {
     const tile = game.board[tileId];
     const property = game.properties[tileId];
     const buildingValue = (tile.developmentCost ?? 0) * (property?.buildingLevel ?? 0);
     return total + (tile.price ?? 0) + buildingValue;
-  }, 0);
+  }, 0) - team.loanDebt;
 }
 
 export default function MonopolyPage() {
   const game = useMonopolyStore(state => state.game);
   const rollDice = useMonopolyStore(state => state.rollDice);
-  const payBail = useMonopolyStore(state => state.payBail);
+  const buyJailKey = useMonopolyStore(state => state.buyJailKey);
   const advanceMovement = useMonopolyStore(state => state.advanceMovement);
   const answerQuestion = useMonopolyStore(state => state.answerQuestion);
+  const takeRescueLoan = useMonopolyStore(state => state.takeRescueLoan);
+  const requestRescueHelp = useMonopolyStore(state => state.requestRescueHelp);
+  const respondToRescueHelp = useMonopolyStore(state => state.respondToRescueHelp);
+  const declareBankruptcy = useMonopolyStore(state => state.declareBankruptcy);
   const buyProperty = useMonopolyStore(state => state.buyProperty);
   const declinePurchase = useMonopolyStore(state => state.declinePurchase);
   const completeAction = useMonopolyStore(state => state.completeAction);
   const dismissCard = useMonopolyStore(state => state.dismissCard);
   const upgradeProperty = useMonopolyStore(state => state.upgradeProperty);
-  const useJailCard = useMonopolyStore(state => state.useJailCard);
-  const startJailQuestion = useMonopolyStore(state => state.startJailQuestion);
+  const useJailKey = useMonopolyStore(state => state.useJailKey);
   const useRentShield = useMonopolyStore(state => state.useRentShield);
   const useBonusCoin = useMonopolyStore(state => state.useBonusCoin);
   const useTakeoverCard = useMonopolyStore(state => state.useTakeoverCard);
   const takeoverProperty = useMonopolyStore(state => state.takeoverProperty);
   const finishTurn = useMonopolyStore(state => state.finishTurn);
+  const downgradeProperty = useMonopolyStore(state => state.downgradeProperty);
+  const setBoardTileFromTemplate = useMonopolyStore(state => state.setBoardTileFromTemplate);
   const tickTime = useMonopolyStore(state => state.tickTime);
   const clearGame = useMonopolyStore(state => state.clearGame);
   const adminBoard = useMonopolyStore(state => state.board);
   const adminRules = useMonopolyStore(state => state.rules);
-  const swapBoardTiles = useMonopolyStore(state => state.swapBoardTiles);
   const resetBoard = useMonopolyStore(state => state.resetBoard);
   const updateRules = useMonopolyStore(state => state.updateRules);
   const updateTileEconomy = useMonopolyStore(state => state.updateTileEconomy);
   const setPhase = useGameStore(state => state.setPhase);
   const [selectedTileId, setSelectedTileId] = useState<number | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [adminSourceId, setAdminSourceId] = useState<number | null>(null);
-  const [adminTargetId, setAdminTargetId] = useState(1);
+  const [adminEditorTileId, setAdminEditorTileId] = useState(10);
+  const [adminTemplateTileId, setAdminTemplateTileId] = useState(-1);
+  const [adminTileError, setAdminTileError] = useState('');
   const [adminEconomyTileId, setAdminEconomyTileId] = useState<number | null>(null);
   const [adminPrice, setAdminPrice] = useState<string | null>(null);
   const [adminRent, setAdminRent] = useState<string | null>(null);
@@ -107,6 +135,13 @@ export default function MonopolyPage() {
 
   const currentTeamId = game?.order[game.currentIndex];
   const currentTeam = game?.teams.find(team => team.id === currentTeamId);
+  const pendingRescue = game?.pendingRescue;
+  const rescueHelpers = game && pendingRescue
+    ? game.teams.filter(team => !team.bankrupt && team.id !== pendingRescue.debtorId && team.coins >= pendingRescue.shortfall)
+    : [];
+  const rescueHelper = game && pendingRescue?.helperId
+    ? game.teams.find(team => team.id === pendingRescue.helperId)
+    : null;
   const rolling = game?.stage === 'moving';
   const sortedTeams = useMemo(() => game ? [...game.teams].sort((a, b) => {
     if (game.winnerId === a.id) return -1;
@@ -114,7 +149,7 @@ export default function MonopolyPage() {
     return wealth(b, game) - wealth(a, game) || b.quizCorrect - a.quizCorrect;
   }) : [], [game]);
   const selectedTile = selectedTileId === null ? null : game?.board[selectedTileId] ?? null;
-  const adminSourceTileId = adminSourceId ?? adminBoard.find(tile => tile.type === 'jail')?.id ?? 1;
+  const adminEditorTile = adminBoard.find(tile => tile.id === adminEditorTileId);
   const configurableTiles = adminBoard.filter(tile => (
     tile.type === 'property' || tile.type === 'rail' || tile.type === 'air' ||
     tile.type === 'cruise' || tile.type === 'space' || tile.type === 'utility'
@@ -132,18 +167,44 @@ export default function MonopolyPage() {
   const itemCount = (itemId: MonopolyItemId) => currentTeam?.inventory[itemId] ?? 0;
   const property = game.pendingTileId === null ? undefined : game.properties[game.pendingTileId];
   const pendingTile = game.pendingTileId === null ? undefined : game.board[game.pendingTileId];
+  const pendingOwner = game.pendingTakeoverOwner
+    ? game.teams.find(team => team.id === game.pendingTakeoverOwner)
+    : undefined;
   const buyCost = pendingTile?.price ?? 0;
   const takeoverCost = buyCost * 2;
   const upgradeCost = pendingTile?.developmentCost ?? 0;
   const developmentGroup = pendingTile?.groupId
     ? game.board.filter(tile => tile.type === 'property' && tile.groupId === pendingTile.groupId)
     : [];
+  const developmentLevels = developmentGroup.map(tile => game.properties[tile.id]?.buildingLevel ?? 0);
+  const ownsDevelopmentGroup = developmentGroup.length > 0 &&
+    developmentGroup.every(tile => game.properties[tile.id]?.ownerId === currentTeam?.id);
+  const propertyTaxAtLevel = (level: number) => {
+    if (!pendingTile) return 0;
+    const tax = pendingTile.rentSchedule?.[level] ?? pendingTile.rent ?? 0;
+    return level === 0 && ownsDevelopmentGroup ? tax * 2 : tax;
+  };
+  const currentPropertyTax = propertyTaxAtLevel(property?.buildingLevel ?? 0);
   const canDevelop = Boolean(
     property &&
+    !game.activeQuestion &&
+    !game.pendingBuy &&
+    !game.pendingCard &&
     pendingTile?.type === 'property' &&
     developmentGroup.length > 0 &&
-    developmentGroup.every(tile => game.properties[tile.id]?.ownerId === currentTeam?.id) &&
-    property.buildingLevel === Math.min(...developmentGroup.map(tile => game.properties[tile.id]?.buildingLevel ?? 0)),
+    ownsDevelopmentGroup &&
+    property.buildingLevel === Math.min(...developmentLevels),
+  );
+  const canDowngrade = Boolean(
+    property &&
+    !game.activeQuestion &&
+    !game.pendingBuy &&
+    !game.pendingCard &&
+    pendingTile?.type === 'property' &&
+    developmentGroup.length > 0 &&
+    ownsDevelopmentGroup &&
+    property.buildingLevel > 0 &&
+    property.buildingLevel === Math.max(...developmentLevels),
   );
 
   if (game.status === 'finished') {
@@ -217,6 +278,7 @@ export default function MonopolyPage() {
                     gridRow: row,
                     gridColumn: column,
                     borderColor: owner?.color ?? tile.groupColor ?? undefined,
+                    backgroundColor: owner ? teamColorTint(owner.color, 0.28) : undefined,
                     boxShadow: owner ? `inset 0 0 0 2px ${owner.color}` : undefined,
                   }}
                   className={`relative flex min-w-0 flex-col items-center justify-center overflow-hidden rounded-lg border p-0.5 text-center transition-all hover:z-10 hover:scale-[1.04] sm:rounded-xl sm:p-1 ${
@@ -225,12 +287,19 @@ export default function MonopolyPage() {
                   aria-label={`${tile.name}, ${squareLabel}`}
                 >
                   {tile.groupColor && <span className="absolute inset-x-0 top-0 h-1 sm:h-2" style={{ backgroundColor: owner?.color ?? tile.groupColor }} />}
-                  <span className={`leading-none ${corner ? 'text-sm sm:text-2xl' : 'text-xs sm:text-lg'}`}>{tile.icon}</span>
+                  {tile.type === 'jail'
+                    ? <PrisonIllustration className="h-7 w-7 shrink-0 sm:h-12 sm:w-12" />
+                    : <span className={`leading-none ${corner ? 'text-sm sm:text-2xl' : 'text-xs sm:text-lg'}`}>{tile.icon}</span>}
                   <span className={`mt-0.5 line-clamp-2 w-full break-words font-extrabold leading-tight ${corner ? 'text-[6px] sm:text-[10px]' : 'text-[5px] sm:text-[9px]'}`}>
                     {tile.name}
                   </span>
                   {tile.price !== undefined && <span className="hidden text-[8px] font-bold text-emerald-800 sm:block">{tile.price} 🪙</span>}
-                  {owned && <span className="text-[5px] font-black sm:text-[8px]">{monopolyBuildingName(owned.buildingLevel)}</span>}
+                  {owned && (
+                    <span className="flex items-center gap-0.5 text-[5px] font-black sm:text-[8px]">
+                      <span>{owner?.avatar}</span>
+                      <span className="truncate">{monopolyBuildingName(owned.buildingLevel)}</span>
+                    </span>
+                  )}
                   {!!tokens.length && (
                     <span className="absolute bottom-0 right-0 flex -space-x-1 sm:bottom-0.5 sm:right-0.5">
                       {tokens.map(token => (
@@ -247,15 +316,25 @@ export default function MonopolyPage() {
               );
             })}
             <div className="col-start-2 col-end-11 row-start-2 row-end-11 flex min-h-0 flex-col items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-800/80 to-slate-900/80 p-2 text-center shadow-inner sm:rounded-[2rem] sm:p-6">
-              <motion.div
-                animate={{ y: [0, -6, 0], rotate: [-2, 2, -2] }}
-                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="text-4xl sm:text-7xl"
-              >
-                🏰
-              </motion.div>
-              <h2 className="mt-1 font-display text-[10px] leading-tight text-amber-100 sm:mt-3 sm:text-3xl">KERAJAAN PETUALANG</h2>
-              <p className="mt-1 hidden max-w-xs text-xs text-white/60 sm:block">Jawab kuis dengan benar untuk melempar dadu, lalu bangun wilayah dan capai FINISH!</p>
+              {game.teams.some(team => team.jailed) ? (
+                <PrisonIllustration className="h-12 w-12 sm:h-24 sm:w-24" />
+              ) : (
+                <motion.div
+                  animate={{ y: [0, -6, 0], rotate: [-2, 2, -2] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="text-4xl sm:text-7xl"
+                >
+                  🏰
+                </motion.div>
+              )}
+              <h2 className="mt-1 font-display text-[10px] leading-tight text-amber-100 sm:mt-3 sm:text-3xl">
+                {game.teams.some(team => team.jailed) ? 'PENJARA' : 'KERAJAAN PETUALANG'}
+              </h2>
+              <p className="mt-1 hidden max-w-xs text-xs text-white/60 sm:block">
+                {game.teams.some(team => team.jailed)
+                  ? `${game.teams.filter(team => team.jailed).map(team => team.name).join(', ')} harus membeli Kunci Bebas Penjara di toko untuk keluar.`
+                  : 'Jawab kuis dengan benar untuk melempar dadu, lalu bangun wilayah dan capai FINISH!'}
+              </p>
               <div className="mt-2 flex flex-wrap justify-center gap-1 sm:mt-4 sm:gap-2">
                 {game.teams.map(team => (
                   <span key={team.id} className={`rounded-full border px-2 py-1 text-[7px] font-bold sm:text-xs ${team.id === currentTeamId ? 'border-amber-200 bg-amber-400/20 text-amber-100' : 'border-white/10 bg-white/5 text-white/70'}`}>
@@ -282,9 +361,48 @@ export default function MonopolyPage() {
                   <span className="min-w-0 flex-1 truncate text-lg font-black">{currentTeam.name}</span>
                   <span className="rounded-full bg-black/20 px-3 py-1 font-black text-yellow-200">{currentTeam.coins} 🪙</span>
                 </div>
-                {currentTeam.jailed && <p className="mt-2 text-xs font-bold text-rose-200">🔒 Dipenjara — bebaskan diri untuk bergerak.</p>}
+                {currentTeam.jailed && <p className="mt-2 text-xs font-bold text-rose-200">🔒 Dipenjara — beli kunci di Toko Penjara untuk keluar.</p>}
                 <p className="mt-1 text-xs text-white/60">Wilayah dimiliki: {currentTeam.properties.length} · Kekayaan: {wealth(currentTeam, game)} 🪙</p>
+                {currentTeam.loanDebt > 0 && <p className="mt-1 text-xs font-bold text-amber-200">Pinjaman tersisa: {currentTeam.loanDebt} 🪙</p>}
               </div>
+
+              {game.stage === 'rescue' && pendingRescue && (
+                <section className="rounded-2xl border border-rose-300/30 bg-rose-500/10 p-4">
+                  <h3 className="font-black text-rose-100">Dana tidak cukup</h3>
+                  <p className="mt-1 text-xs text-white/70">
+                    Kurang {pendingRescue.shortfall} 🪙 untuk membayar {pendingRescue.reason}.
+                  </p>
+                  {pendingRescue.phase === 'choose' ? (
+                    <div className="mt-3 space-y-2">
+                      <button onClick={takeRescueLoan} className="w-full rounded-xl bg-amber-500 px-3 py-2 text-xs font-black text-slate-950">
+                        Ajukan pinjaman {pendingRescue.shortfall} 🪙
+                      </button>
+                      <p className="text-[10px] text-white/50">Pinjaman tanpa bunga; pemasukan berikutnya otomatis dipakai untuk mencicil.</p>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-white/65">Atau minta bantuan pemain lain:</p>
+                        {rescueHelpers.length > 0 ? rescueHelpers.map(helper => (
+                          <button key={helper.id} onClick={() => requestRescueHelp(helper.id)} className="w-full rounded-xl bg-sky-600/80 px-3 py-2 text-left text-xs font-bold">
+                            Minta {helper.name} membantu {pendingRescue.shortfall} 🪙
+                          </button>
+                        )) : <p className="text-[10px] text-white/45">Belum ada pemain lain dengan saldo yang cukup.</p>}
+                      </div>
+                      <button onClick={declareBankruptcy} className="w-full rounded-xl bg-white/10 px-3 py-2 text-xs font-bold text-white/70">
+                        Tolak bantuan dan nyatakan bangkrut
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-white/75">
+                        {rescueHelper?.name ?? 'Pemain'} diminta membantu {pendingRescue.shortfall} 🪙.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => respondToRescueHelp(true)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black">Setujui bantuan</button>
+                        <button onClick={() => respondToRescueHelp(false)} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold">Tolak</button>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
 
               <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
                 {[game.diceResult, game.bonusDiceResult].map((die, index) => (
@@ -304,12 +422,31 @@ export default function MonopolyPage() {
               </div>
 
               {game.stage === 'ready' && currentTeam.jailed && (
-                <div className="grid grid-cols-2 gap-2">
-                  <button disabled={!itemCount('jail_card')} onClick={useJailCard} className="rounded-xl bg-indigo-500/80 px-3 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-40">🗝️ Pakai Kartu ({itemCount('jail_card')})</button>
-                  <button disabled={currentTeam.coins < game.rules.bailCost} onClick={payBail} className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-black disabled:cursor-not-allowed disabled:opacity-40">💰 Bayar {game.rules.bailCost} koin</button>
-                  <button onClick={rollDice} className="rounded-xl bg-sky-600 px-3 py-2 text-xs font-black transition hover:bg-sky-500">🎲 Cari angka kembar</button>
-                  <button onClick={startJailQuestion} className="rounded-xl bg-fuchsia-600 px-3 py-2 text-xs font-black transition hover:bg-fuchsia-500">❓ Jawab kuis</button>
-                </div>
+                <section className="rounded-2xl border border-rose-300/30 bg-gradient-to-br from-rose-950/70 to-slate-900 p-4">
+                  <div className="flex items-center gap-3">
+                    <PrisonIllustration className="h-14 w-14 shrink-0" />
+                    <div>
+                      <h3 className="font-black text-rose-100">🏪 Toko Penjara</h3>
+                      <p className="mt-1 text-[11px] text-white/65">Kunci Bebas Penjara · {game.rules.bailCost} 🪙</p>
+                    </div>
+                  </div>
+                  {itemCount('jail_card') > 0 ? (
+                    <button onClick={useJailKey} className="mt-3 w-full rounded-xl bg-indigo-500 px-3 py-2.5 text-xs font-black transition hover:bg-indigo-400">
+                      🗝️ Gunakan Kunci ({itemCount('jail_card')}) · Bebaskan diri
+                    </button>
+                  ) : (
+                    <button
+                      disabled={currentTeam.coins < game.rules.bailCost}
+                      onClick={buyJailKey}
+                      className="mt-3 w-full rounded-xl bg-amber-400 px-3 py-2.5 text-xs font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      🛒 Beli Kunci · {game.rules.bailCost} koin
+                    </button>
+                  )}
+                  {currentTeam.coins < game.rules.bailCost && itemCount('jail_card') === 0 && (
+                    <p className="mt-2 text-center text-[10px] text-rose-200">Saldo belum cukup untuk membeli kunci.</p>
+                  )}
+                </section>
               )}
               {game.stage === 'ready' && !currentTeam.jailed && (
                 <button onClick={rollDice} className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 py-3 font-display text-base text-slate-950 shadow-lg transition hover:brightness-110">
@@ -317,7 +454,7 @@ export default function MonopolyPage() {
                 </button>
               )}
 
-              {game.activeQuestion && (
+              {game.activeQuestion && game.stage !== 'rescue' && (
                 <section className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-500/10 p-4">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="rounded-full bg-fuchsia-400/20 px-2 py-1 text-[10px] font-black uppercase text-fuchsia-100">
@@ -328,12 +465,28 @@ export default function MonopolyPage() {
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-fuchsia-100/60">
                     {game.questionPurpose === 'turn'
                       ? 'Jawab benar untuk mendapat lemparan dadu'
-                      : game.questionPurpose === 'jail'
-                        ? 'Jawab benar untuk bebas dan melempar dadu'
-                        : game.questionPurpose === 'rent'
-                          ? 'Jawab soal sulit untuk diskon sewa 50%'
+                      : game.questionPurpose === 'rent'
+                      ? 'Jawab soal sulit untuk diskon pajak 50%'
                           : `${game.activeQuestion.category} · soal petak`}
                   </p>
+                  {game.questionPurpose === 'rent' && pendingTile && pendingOwner && property && (
+                    <div
+                      className="mb-3 rounded-xl border p-3"
+                      style={{
+                        borderColor: teamColorTint(pendingOwner.color, 0.55),
+                        backgroundColor: teamColorTint(pendingOwner.color, 0.16),
+                      }}
+                    >
+                      <h3 className="text-xs font-black text-amber-100">🏠 Pajak Properti</h3>
+                      <p className="mt-1 text-[11px] text-white/75">
+                        {currentTeam.name} mendarat di {pendingTile.name}, milik {pendingOwner.avatar} {pendingOwner.name}.
+                      </p>
+                      <p className="mt-1 text-xs font-bold text-white">
+                        {monopolyBuildingName(property.buildingLevel)} · Pajak saat ini {game.pendingRent} 🪙
+                      </p>
+                      <p className="mt-1 text-[10px] text-white/55">Jawaban benar membayar setengah pajak; jawaban salah membayar penuh.</p>
+                    </div>
+                  )}
                   <p className="mb-3 text-sm font-bold leading-snug">{game.activeQuestion.question}</p>
                   <div className="grid grid-cols-1 gap-2">
                     {game.activeQuestion.options.map(option => (
@@ -344,7 +497,7 @@ export default function MonopolyPage() {
                   </div>
                   {game.questionPurpose === 'rent' && (
                     <button onClick={() => answerQuestion('')} className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-[11px] font-semibold text-white/60 transition hover:bg-white/10">
-                      Lewati kuis — bayar sewa penuh {game.pendingRent} koin
+                      Lewati kuis — bayar pajak penuh {game.pendingRent} koin
                     </button>
                   )}
                   {game.questionPurpose === 'turn' && (
@@ -368,7 +521,7 @@ export default function MonopolyPage() {
               {game.pendingBuy && pendingTile && (
                 <section className="rounded-2xl border border-amber-300/30 bg-amber-400/10 p-4">
                   <h3 className="font-black text-amber-100">Beli {pendingTile.name}?</h3>
-                  <p className="mt-1 text-xs text-white/65">Harga {buyCost} koin · sewa awal {pendingTile.rent} koin</p>
+                  <p className="mt-1 text-xs text-white/65">Harga {buyCost} koin · pajak dasar {pendingTile.rent} koin</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button disabled={currentTeam.coins < buyCost} onClick={buyProperty} className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black disabled:opacity-40">Beli wilayah</button>
                     <button onClick={declinePurchase} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-bold">Lewati</button>
@@ -378,7 +531,7 @@ export default function MonopolyPage() {
 
               {game.questionPurpose === 'rent' && (
                 <section className="grid grid-cols-2 gap-2">
-                  <button disabled={!itemCount('rent_shield')} onClick={useRentShield} className="rounded-xl bg-sky-600/80 px-2 py-2 text-[10px] font-black disabled:opacity-40">🛡️ Batalkan sewa ({itemCount('rent_shield')})</button>
+                  <button disabled={!itemCount('rent_shield')} onClick={useRentShield} className="rounded-xl bg-sky-600/80 px-2 py-2 text-[10px] font-black disabled:opacity-40">🛡️ Batalkan pajak ({itemCount('rent_shield')})</button>
                   <button disabled={!itemCount('takeover_card')} onClick={useTakeoverCard} className="rounded-xl bg-rose-600/80 px-2 py-2 text-[10px] font-black disabled:opacity-40">⚔️ Tantang ambil alih ({itemCount('takeover_card')})</button>
                 </section>
               )}
@@ -401,7 +554,12 @@ export default function MonopolyPage() {
 
               {canDevelop && property && game.stage === 'action' && property.buildingLevel < 5 && (
                 <button disabled={currentTeam.coins < upgradeCost} onClick={upgradeProperty} className="rounded-xl border border-amber-200/20 bg-amber-400/15 px-3 py-2 text-xs font-black text-amber-100 disabled:opacity-40">
-                  🏗️ Bangun {monopolyBuildingName(property.buildingLevel + 1)} · {upgradeCost} koin
+                  🏗️ Bangun {monopolyBuildingName(property.buildingLevel + 1)} · {upgradeCost} koin · pajak {currentPropertyTax} → {propertyTaxAtLevel(property.buildingLevel + 1)} koin
+                </button>
+              )}
+              {canDowngrade && property && game.stage === 'action' && (
+                <button onClick={downgradeProperty} className="rounded-xl border border-sky-200/20 bg-sky-400/10 px-3 py-2 text-xs font-black text-sky-100 transition hover:bg-sky-400/20">
+                  🏚️ Turunkan ke {monopolyBuildingName(property.buildingLevel - 1)} · refund {Math.floor(upgradeCost / 2)} · pajak {currentPropertyTax} → {propertyTaxAtLevel(property.buildingLevel - 1)} koin
                 </button>
               )}
               {game.stage === 'action' && !game.activeQuestion && !game.pendingBuy && !game.pendingCard && (
@@ -425,7 +583,7 @@ export default function MonopolyPage() {
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: team.color }} />
                   <span className="truncate text-[10px] font-bold">{team.avatar} {team.name}</span>
                 </div>
-                <div className="mt-1 text-[10px] text-white/60">{team.coins} 🪙 · {team.properties.length} properti · {team.quizCorrect}✅/{team.quizIncorrect}❌ · posisi {team.position}{team.jailed ? ' · 🔒' : ''}</div>
+                <div className="mt-1 text-[10px] text-white/60">{team.coins} 🪙 · utang {team.loanDebt} 🪙 · {team.properties.length} properti · {team.quizCorrect}✅/{team.quizIncorrect}❌ · posisi {team.position}{team.jailed ? ' · 🔒' : ''}</div>
               </div>
             ))}
           </div>
@@ -459,9 +617,14 @@ export default function MonopolyPage() {
               </div>
               {selectedTile.price !== undefined && (
                 <div className="mt-2 text-xs text-white/70">
-                  {selectedTile.price} 🪙 · sewa {selectedTile.rentSchedule?.[0] ?? selectedTile.rent ?? 'sesuai aturan'} 🪙
+                  {selectedTile.price} 🪙 · pajak dasar {selectedTile.rentSchedule?.[0] ?? selectedTile.rent ?? 'sesuai aturan'} 🪙
                   {selectedTile.groupId && <span> · kelompok {selectedTile.groupId}</span>}
-                  {game.properties[selectedTile.id] && <span> · pemilik {game.teams.find(team => team.id === game.properties[selectedTile.id].ownerId)?.name}, {monopolyBuildingName(game.properties[selectedTile.id].buildingLevel)}{game.properties[selectedTile.id].buildingLevel === 5 ? ' (Landmark)' : ''}</span>}
+                  {game.properties[selectedTile.id] && (
+                    <span className="mt-1 flex items-center gap-1">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: game.teams.find(team => team.id === game.properties[selectedTile.id].ownerId)?.color }} />
+                      Pemilik {game.teams.find(team => team.id === game.properties[selectedTile.id].ownerId)?.name} · {monopolyBuildingName(game.properties[selectedTile.id].buildingLevel)}
+                    </span>
+                  )}
                 </div>
               )}
             </section>
@@ -480,7 +643,7 @@ export default function MonopolyPage() {
           </section>
         </aside>
       </div>
-      {game.pendingCard && (
+      {game.pendingCard && game.stage === 'action' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
           <motion.section
             initial={{ opacity: 0, scale: 0.9, y: 12 }}
@@ -511,35 +674,104 @@ export default function MonopolyPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                <h3 className="mb-2 text-sm font-black text-white">Atur letak petak</h3>
-                <p className="mb-3 text-[11px] text-white/50">Tukar posisi fitur, misalnya memindahkan Penjara ke kotak lain. GO tetap di kotak 0.</p>
-                <label className="mb-2 block text-xs font-bold text-white/70">
-                  Fitur yang dipindahkan
-                  <select value={adminSourceTileId} onChange={event => setAdminSourceId(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white">
-                    {adminBoard.filter(tile => tile.id > 0).map(tile => <option key={tile.id} value={tile.id}>{tile.id}. {tile.name}</option>)}
-                  </select>
-                </label>
-                <label className="block text-xs font-bold text-white/70">
-                  Tukar dengan kotak
-                  <select value={adminTargetId} onChange={event => setAdminTargetId(Number(event.target.value))} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white">
-                    {adminBoard.filter(tile => tile.id > 0).map(tile => <option key={tile.id} value={tile.id}>{tile.id}. {tile.name}</option>)}
-                  </select>
-                </label>
-                <div className="mt-3 flex gap-2">
-                  <button disabled={adminSourceTileId === adminTargetId} onClick={() => {
-                    swapBoardTiles(adminSourceTileId, adminTargetId);
-                    setAdminSourceId(adminTargetId);
-                  }} className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black disabled:opacity-40">Tukar posisi</button>
-                  <button onClick={() => {
-                    resetBoard();
-                    setAdminSourceId(null);
-                    setAdminTargetId(1);
-                  }} className="rounded-lg bg-white/10 px-3 py-2 text-xs font-bold">Reset papan</button>
+                <h3 className="mb-2 text-sm font-black text-white">🧩 Editor Kotak</h3>
+                <p className="mb-3 text-[11px] text-white/50">Pilih nomor kotak, tentukan jenis petaknya, lalu simpan. Petak khusus bisa ditambahkan di beberapa kotak sekaligus.</p>
+                <div className="mb-3 grid max-h-52 grid-cols-5 gap-1.5 overflow-y-auto p-1 sm:grid-cols-10">
+                  {adminBoard.map(tile => {
+                    const isSelected = tile.id === adminEditorTileId;
+                    const isSpecial = FEATURE_TILE_TEMPLATES.some(template => (
+                      template.type === tile.type && template.name === tile.name
+                    ));
+                    return (
+                      <button
+                        key={tile.id}
+                        type="button"
+                        disabled={tile.type === 'go'}
+                        onClick={() => {
+                          setAdminEditorTileId(tile.id);
+                          setAdminTileError('');
+                          const existingTemplate = FEATURE_TILE_TEMPLATES.find(template => (
+                            template.type === tile.type && template.name === tile.name
+                          ));
+                          setAdminTemplateTileId(existingTemplate?.id ?? -1);
+                        }}
+                        aria-label={`Pilih kotak ${tile.id}, ${adminTileName(tile)}`}
+                        aria-pressed={isSelected}
+                        className={`min-h-11 rounded-lg border px-1 text-center transition-colors disabled:cursor-not-allowed ${
+                          isSelected
+                            ? 'border-yellow-300 bg-yellow-500/25 text-white ring-1 ring-yellow-300'
+                            : isSpecial
+                              ? 'border-purple-400/50 bg-purple-500/15 text-white'
+                              : 'border-white/10 bg-black/20 text-white/45 hover:border-white/30'
+                        }`}
+                      >
+                        <span className="block text-xs font-bold">#{tile.id}</span>
+                        <span className="block text-sm leading-4">{tile.icon}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_1.5fr_auto] sm:items-end">
+                  <label className="space-y-1 text-[10px] font-bold text-white/60">
+                    Nomor kotak
+                    <input
+                      type="number"
+                      min="1"
+                      max={adminBoard.length - 1}
+                      value={adminEditorTileId}
+                      onChange={event => {
+                        setAdminEditorTileId(Number(event.target.value));
+                        setAdminTileError('');
+                      }}
+                      className="w-full rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-sm text-white"
+                    />
+                  </label>
+                  <label className="space-y-1 text-[10px] font-bold text-white/60">
+                    Jenis petak
+                    <select
+                      value={adminTemplateTileId}
+                      onChange={event => setAdminTemplateTileId(Number(event.target.value))}
+                      className="w-full rounded-lg border border-white/15 bg-slate-900 px-2 py-2 text-sm text-white"
+                    >
+                      <option value={-1}>↩️ Petak asli</option>
+                      {FEATURE_TILE_TEMPLATES.map(tile => (
+                        <option key={tile.id} value={tile.id}>{tile.icon} {adminTileName(tile)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!Number.isInteger(adminEditorTileId) || adminEditorTileId < 1 || adminEditorTileId >= adminBoard.length) {
+                        setAdminTileError(`Pilih nomor kotak antara 1 dan ${adminBoard.length - 1}.`);
+                        return;
+                      }
+                      if (adminEditorTile?.type === 'go') {
+                        setAdminTileError('Kotak GO tidak dapat diubah.');
+                        return;
+                      }
+                      setBoardTileFromTemplate(adminEditorTileId, adminTemplateTileId < 0 ? adminEditorTileId : adminTemplateTileId);
+                      setAdminTileError('');
+                    }}
+                    className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black hover:bg-emerald-500"
+                  >
+                    Simpan
+                  </button>
+                </div>
+                {adminTileError && <p role="alert" className="mt-2 text-[10px] text-rose-300">{adminTileError}</p>}
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <p className="text-[10px] text-white/45">
+                    Kotak #{adminEditorTileId}: {adminEditorTile?.icon} {adminEditorTile ? adminTileName(adminEditorTile) : '—'}
+                  </p>
+                  <button onClick={resetBoard} className="shrink-0 rounded-lg bg-white/10 px-3 py-2 text-[10px] font-bold text-white/70 hover:bg-white/15">
+                    Pulihkan semua petak
+                  </button>
                 </div>
               </section>
 
               <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                 <h3 className="mb-2 text-sm font-black text-white">Atur ekonomi petak</h3>
+                <p className="mb-2 text-[10px] text-white/55">Harga beli, pajak dasar properti/transportasi, dan biaya pengembangan minimal 2.000 koin. Pajak akan meningkat sesuai tingkat bangunan.</p>
                 <label className="block text-xs font-bold text-white/70">
                   Properti / transportasi
                   <select value={selectedAdminEconomyTileId} onChange={event => {
@@ -555,18 +787,18 @@ export default function MonopolyPage() {
                   <>
                     <label className="mt-2 block text-xs font-bold text-white/70">
                       Harga beli
-                      <input type="number" min="0" value={adminPrice ?? String(selectedAdminEconomyTile.price ?? 0)} onChange={event => setAdminPrice(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
+                      <input type="number" min="2000" value={adminPrice ?? String(selectedAdminEconomyTile.price ?? 2000)} onChange={event => setAdminPrice(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
                     </label>
                     {selectedAdminEconomyTile.type !== 'utility' && (
                       <label className="mt-2 block text-xs font-bold text-white/70">
-                        Sewa awal
-                        <input type="number" min="0" value={adminRent ?? String(selectedAdminEconomyTile.rentSchedule?.[0] ?? selectedAdminEconomyTile.rent ?? 0)} onChange={event => setAdminRent(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
+                        Pajak dasar
+                        <input type="number" min="2000" value={adminRent ?? String(selectedAdminEconomyTile.rentSchedule?.[0] ?? selectedAdminEconomyTile.rent ?? 2000)} onChange={event => setAdminRent(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
                       </label>
                     )}
                     {selectedAdminEconomyTile.type === 'property' && (
                       <label className="mt-2 block text-xs font-bold text-white/70">
                         Biaya pengembangan
-                        <input type="number" min="0" value={adminDevelopmentCost ?? String(selectedAdminEconomyTile.developmentCost ?? 0)} onChange={event => setAdminDevelopmentCost(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
+                        <input type="number" min="2000" value={adminDevelopmentCost ?? String(selectedAdminEconomyTile.developmentCost ?? 2000)} onChange={event => setAdminDevelopmentCost(event.target.value)} className="mt-1 w-full rounded-lg border border-white/15 bg-slate-900 p-2 text-white" />
                       </label>
                     )}
                     <button onClick={() => {
@@ -594,7 +826,7 @@ export default function MonopolyPage() {
                   {ADMIN_RULE_FIELDS.map(field => (
                     <label key={field.key} className="space-y-1 text-[10px] font-bold text-white/70">
                       {field.label}
-                      <input type="number" min={field.key.startsWith('diceWeight') ? 1 : 0} max={field.key.startsWith('diceWeight') ? 1000 : undefined} value={adminRules[field.key]} onChange={event => updateRules({ [field.key]: Number(event.target.value) })} className="w-full rounded-lg border border-white/15 bg-slate-900 px-2 py-1.5 text-white" />
+                      <input type="number" min={field.key.startsWith('diceWeight') ? 1 : field.key === 'startingCash' ? 2000 : 0} max={field.key.startsWith('diceWeight') ? 1000 : undefined} value={adminRules[field.key]} onChange={event => updateRules({ [field.key]: Number(event.target.value) })} className="w-full rounded-lg border border-white/15 bg-slate-900 px-2 py-1.5 text-white" />
                     </label>
                   ))}
                 </div>
