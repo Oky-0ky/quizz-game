@@ -3,6 +3,8 @@ import { BAHASA_INDONESIA_QUESTIONS } from '@/data/bahasaIndonesiaQuestions';
 import { PAI_QUESTIONS } from '@/data/paiQuestions';
 import { FIQIH_LOKAL_QUESTIONS } from '@/data/fiqihLokalQuestions';
 import { BAHASA_ARAB_QUESTIONS } from '@/data/bahasaArabQuestions';
+import { SENI_RUPA_QUESTIONS } from '@/data/seniRupaQuestions';
+import { IPAS_QUESTIONS } from '@/data/ipasQuestions';
 
 // ===================== SHOP ITEMS =====================
 export const SHOP_ITEMS: ShopItem[] = [
@@ -127,7 +129,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     description: 'Maju 6 kotak.',
     icon: '🚀',
     emoji: '🚀',
-    price: 100,
+    price: 200,
     maxStock: 99,
     currentStock: 99,
     effect: { type: 'move_forward', value: 6 },
@@ -1364,6 +1366,12 @@ export const QUESTION_BANK: Question[] = [
 
   // ===== Bahasa Arab (100 soal dari bahas arab.py) =====
   ...BAHASA_ARAB_QUESTIONS,
+
+  // ===== Seni Rupa (100 soal dari seni rupa.py) =====
+  ...SENI_RUPA_QUESTIONS,
+
+  // ===== IPAS (100 soal dari IPAS.py) =====
+  ...IPAS_QUESTIONS,
 ];
 
 export function getQuestionsBySubjects(subjects?: SubjectId[]): Question[] {

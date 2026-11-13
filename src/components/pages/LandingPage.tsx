@@ -6,6 +6,7 @@ import { useGameStore } from '@/store/gameStore';
 import { MonopolyDuration, MonopolyRules, useMonopolyStore } from '@/store/monopolyStore';
 import { TEAM_COLORS, TEAM_AVATARS, GameMode, SUBJECTS, SubjectId, DEFAULT_SUBJECTS, BoardMapId, AdventurePathId } from '@/types/game';
 import { QUESTION_BANK } from '@/data/gameData';
+import { getMonopolyQuestions } from '@/data/monopolyQuestions';
 import { ADVENTURE_PATHS, BOARD_MAPS, getAdventurePath } from '@/data/adventureMap';
 
 interface BgTile {
@@ -142,10 +143,11 @@ export default function LandingPage() {
 
   const handlePlayGame = () => {
     if (isMonopoly) {
-      if (teams.length < 2) return;
+      if (teams.length < 2 || selectedSubjects.length === 0) return;
       startMonopolyGame(
         teams.map(team => ({ name: team.name, color: team.color, avatar: team.avatar })),
         monopolyDuration,
+        selectedSubjects,
       );
       return;
     }
@@ -251,6 +253,52 @@ export default function LandingPage() {
 
           {isMonopoly && (
             <>
+            <section className="mb-6 rounded-2xl border border-sky-300/25 bg-sky-400/10 p-4">
+              <h3 className="mb-1 font-black text-sky-100">📚 Pilih Mata Pelajaran</h3>
+              <p className="mb-3 text-xs text-white/65">Soal Monopoli akan diambil dari mata pelajaran yang dipilih. Hanya soal pilihan ganda dengan 4 opsi yang digunakan.</p>
+              <div className="space-y-2">
+                {SUBJECTS.map(subject => {
+                  const isActive = selectedSubjects.includes(subject.id);
+                  const count = getMonopolyQuestions([subject.id]).length;
+                  return (
+                    <button
+                      key={subject.id}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => setSelectedSubjects(prev =>
+                        prev.includes(subject.id)
+                          ? prev.filter(id => id !== subject.id)
+                          : [...prev, subject.id]
+                      )}
+                      className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border transition-all text-left ${
+                        isActive
+                          ? 'bg-sky-600/40 border-sky-300'
+                          : 'bg-white/5 border-white/15 hover:border-white/30'
+                      }`}
+                    >
+                      <span className="text-2xl">{subject.emoji}</span>
+                      <span className="flex-1">
+                        <span className="block text-white font-bold text-sm">{subject.name}</span>
+                        <span className="block text-white/60 text-xs">{subject.desc} · {count} soal</span>
+                      </span>
+                      <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center text-xs font-bold ${
+                        isActive ? 'bg-sky-500 border-sky-200 text-white' : 'border-white/40 text-transparent'
+                      }`}>✓</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedSubjects.length === 0 && (
+                <p className="mt-2 text-xs text-amber-200">Pilih minimal 1 mata pelajaran.</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelectedSubjects(DEFAULT_SUBJECTS)}
+                className="mt-2 text-xs text-sky-200 hover:text-sky-100"
+              >
+                Pilih semua mata pelajaran
+              </button>
+            </section>
             <section className="mb-6 rounded-2xl border border-violet-300/25 bg-violet-400/10 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -455,12 +503,13 @@ export default function LandingPage() {
 
           <button
             onClick={handlePlayGame}
-            disabled={isMonopoly ? teams.length < 2 : teams.length === 0}
+            disabled={isMonopoly ? teams.length < 2 || selectedSubjects.length === 0 : teams.length === 0}
             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:opacity-50 text-white font-display text-xl py-4 rounded-2xl transition-all transform hover:scale-105 shadow-lg"
           >
             {isMonopoly ? '🎲 Mulai Monopoli Petualang!' : '🎮 Mulai Permainan!'}
           </button>
           {isMonopoly && teams.length < 2 && <p className="mt-2 text-center text-xs text-amber-200">Tambahkan minimal 2 kelompok untuk bermain.</p>}
+          {isMonopoly && selectedSubjects.length === 0 && <p className="mt-2 text-center text-xs text-amber-200">Pilih minimal 1 mata pelajaran untuk soal kuis.</p>}
         </motion.div>
       </div>
     );

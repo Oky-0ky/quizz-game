@@ -39,7 +39,7 @@ export type GamePhase = 'lobby' | 'setup' | 'playing' | 'paused' | 'question' | 
 export type ItemCategory = 'help' | 'strategy' | 'defense';
 
 /** Mata pelajaran yang bisa dipilih untuk bank soal */
-export type SubjectId = 'matematika' | 'b_indonesia' | 'pai' | 'fiqih_lokal' | 'bahasa_arab';
+export type SubjectId = 'matematika' | 'b_indonesia' | 'pai' | 'fiqih_lokal' | 'bahasa_arab' | 'seni_rupa' | 'ipas';
 
 export const SUBJECTS: { id: SubjectId; name: string; emoji: string; desc: string }[] = [
   { id: 'matematika', name: 'Matematika', emoji: '➗', desc: 'Hitung, aljabar & geometri' },
@@ -47,6 +47,8 @@ export const SUBJECTS: { id: SubjectId; name: string; emoji: string; desc: strin
   { id: 'pai', name: 'PAI Nasional', emoji: '🕌', desc: 'Akidah, ibadah & Al-Qur\'an' },
   { id: 'fiqih_lokal', name: 'Fiqih Lokal', emoji: '🌙', desc: 'Ibadah: jamak, qashar, Jum\'at & jenazah' },
   { id: 'bahasa_arab', name: 'Bahasa Arab', emoji: '🔤', desc: 'Kosakata, tata bahasa & kalimat Arab' },
+  { id: 'seni_rupa', name: 'Seni Rupa', emoji: '🎨', desc: 'Unsur rupa, teknik mewarnai & prinsip ritme' },
+  { id: 'ipas', name: 'IPAS', emoji: '🔬', desc: 'Ilmu Pengetahuan Alam dan Sosial' },
 ];
 
 export const DEFAULT_SUBJECTS: SubjectId[] = SUBJECTS.map(s => s.id);

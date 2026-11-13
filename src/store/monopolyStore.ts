@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { MONOPOLY_BOARD, MonopolyTile } from '@/data/monopolyBoard';
-import { MONOPOLY_QUESTIONS, MonopolyQuestion } from '@/data/monopolyQuestions';
+import { getMonopolyQuestions, MonopolyQuestion } from '@/data/monopolyQuestions';
+import { DEFAULT_SUBJECTS, SubjectId } from '@/types/game';
 
 export type MonopolyItemId = 'jail_card' | 'rent_shield' | 'takeover_card' | 'bonus_coin';
 export type MonopolyDuration = { type: 'rounds'; value: 10 | 15 | 20 } | { type: 'time'; value: number };
@@ -81,6 +82,7 @@ export interface MonopolyGame {
   status: 'playing' | 'finished';
   board: MonopolyTile[];
   rules: MonopolyRules;
+  subjects: SubjectId[];
   teams: MonopolyTeam[];
   order: string[];
   currentIndex: number;
@@ -124,6 +126,7 @@ interface MonopolyStore {
   startGame: (
     teams: Array<{ name: string; color: string; avatar: string }>,
     duration: MonopolyDuration,
+    subjects: SubjectId[],
   ) => void;
   clearGame: () => void;
   startTurnQuiz: () => void;
@@ -194,13 +197,26 @@ function rollDie(rules: MonopolyRules): number {
   return weights.length;
 }
 
-function randomQuestion(usedQuestionIds: string[], difficulty?: MonopolyQuestion['difficulty']): MonopolyQuestion {
-  const questions = difficulty
-    ? MONOPOLY_QUESTIONS.filter(question => question.difficulty === difficulty)
-    : MONOPOLY_QUESTIONS;
+function randomQuestion(
+  usedQuestionIds: string[],
+  subjects: SubjectId[],
+  difficulty?: MonopolyQuestion['difficulty'],
+): MonopolyQuestion {
+  const subjectQuestions = getMonopolyQuestions(subjects);
+  const matchingDifficulty = difficulty
+    ? subjectQuestions.filter(question => question.difficulty === difficulty)
+    : subjectQuestions;
+  const questions = matchingDifficulty.length ? matchingDifficulty : subjectQuestions;
   const available = questions.filter(question => !usedQuestionIds.includes(question.id));
   const pool = available.length ? available : questions;
   return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function restoreSubjects(subjects: SubjectId[] | undefined): SubjectId[] {
+  const validSubjects = Array.isArray(subjects)
+    ? subjects.filter((subject): subject is SubjectId => DEFAULT_SUBJECTS.includes(subject))
+    : [];
+  return validSubjects.length ? validSubjects : ['b_indonesia'];
 }
 
 function addLog(game: MonopolyGame, teamId: string, message: string): MonopolyGame {
@@ -402,7 +418,7 @@ function finishAction(game: MonopolyGame): MonopolyGame {
 }
 
 function startTurnQuestion(game: MonopolyGame): MonopolyGame {
-  const question = randomQuestion(game.usedQuestionIds);
+  const question = randomQuestion(game.usedQuestionIds, game.subjects);
   return {
     ...game,
     stage: 'action',
@@ -562,7 +578,11 @@ function processLanding(game: MonopolyGame, tileId: number): MonopolyGame {
     if (next.stage !== 'rescue') next.stage = 'action';
     return addLog(next, team.id, `${tile.name}: ${next.pendingCard.message}`);
   }
-  const question = randomQuestion(next.usedQuestionIds, questionPurpose === 'rent' ? 'hard' : undefined);
+  const question = randomQuestion(
+    next.usedQuestionIds,
+    next.subjects,
+    questionPurpose === 'rent' ? 'hard' : undefined,
+  );
   return {
     ...next,
     activeQuestion: question,
@@ -621,6 +641,7 @@ function makeInitialGame(
   duration: MonopolyDuration,
   board: MonopolyTile[],
   rules: MonopolyRules,
+  subjects: SubjectId[],
 ): MonopolyGame {
   const teams = teamsData.map((team, index) => ({
     ...team,
@@ -646,6 +667,7 @@ function makeInitialGame(
     status: 'playing',
     board: [...board],
     rules,
+    subjects,
     teams,
     order,
     currentIndex: 0,
@@ -693,6 +715,7 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
     quizCorrect: team.quizCorrect ?? 0,
     quizIncorrect: team.quizIncorrect ?? 0,
   }));
+  const subjects = restoreSubjects(savedGame.subjects);
   if (savedBoard.length === board.length && savedBoard[0]?.type === 'go') {
     return {
       ...savedGame,
@@ -701,6 +724,7 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
         : {}),
       board: enforceBoardEconomyMinimum(savedBoard),
       rules: restoredRules,
+      subjects,
       teams,
       diceTotal: savedGame.diceTotal ?? null,
       extraTurn: savedGame.extraTurn ?? false,
@@ -733,6 +757,7 @@ function restoreGame(savedGame: MonopolyGame | null | undefined, board: Monopoly
     ...savedGame,
     board,
     rules: restoredRules,
+    subjects,
     teams: migratedTeams,
     properties: migratedProperties,
     stage: savedGame.status === 'playing' ? 'ready' : 'done',
@@ -839,9 +864,15 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
     ) as Partial<MonopolyRules>;
     set({ rules: { ...get().rules, ...updatedRules } });
   },
-  startGame: (teamsData, duration) => {
-    if (teamsData.length < 2 || teamsData.length > 6) return;
-    set({ game: makeInitialGame(teamsData, duration, get().board, get().rules) });
+  startGame: (teamsData, duration, subjects) => {
+    const validSubjects = restoreSubjects(subjects);
+    if (
+      teamsData.length < 2 ||
+      teamsData.length > 6 ||
+      !subjects.length ||
+      !getMonopolyQuestions(validSubjects).length
+    ) return;
+    set({ game: makeInitialGame(teamsData, duration, get().board, get().rules, validSubjects) });
   },
   clearGame: () => set({ game: null }),
 
@@ -1187,7 +1218,7 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
     if (team.inventory.takeover_card < 1) return;
     const property = game.properties[game.pendingTileId];
     if (!property || property.buildingLevel >= 5) return;
-    const question = randomQuestion(game.usedQuestionIds);
+    const question = randomQuestion(game.usedQuestionIds, game.subjects);
     const updatedTeam = { ...team, inventory: { ...team.inventory, takeover_card: team.inventory.takeover_card - 1 } };
     const next = {
       ...game,
@@ -1269,7 +1300,7 @@ export const useMonopolyStore = create<MonopolyStore>()(persist((set, get) => ({
 }), {
   name: 'monopoli-petualang',
   partialize: state => ({ board: state.board, rules: state.rules, game: state.game }),
-  version: 7,
+  version: 8,
   migrate: persistedState => {
     const persisted = persistedState as Partial<MonopolyStore>;
     const savedBoard = persisted.board;
