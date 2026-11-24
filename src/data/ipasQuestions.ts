@@ -1,0 +1,1228 @@
+import type { Question } from '@/types/game';
+
+/** Bank 100 soal pilihan ganda IPAS dari IPAS.py. */
+interface RawIPASQuestion {
+  no: number;
+  bab: string;
+  pertanyaan: string;
+  pilihan: string[];
+  jawaban_benar: string;
+}
+
+const RAW_IPAS_QUESTIONS: RawIPASQuestion[] = [
+  {
+    "no": 1,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Sumber bunyi berasal dari setiap benda yang mengalami peristiwa ...",
+    "pilihan": [
+      "Perubahan suhu secara mendadak",
+      "Getaran pada partikel-partikelnya",
+      "Pemuaian akibat tekanan udara",
+      "Perpindahan tempat secara lurus"
+    ],
+    "jawaban_benar": "Getaran pada partikel-partikelnya"
+  },
+  {
+    "no": 2,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bunyi tidak dapat merambat di ruang hampa udara luar angkasa karena ...",
+    "pilihan": [
+      "Suhu di luar angkasa terlalu rendah",
+      "Frekuensi bunyi menjadi terlalu kecil",
+      "Tidak ada gaya gravitasi yang menarik bunyi",
+      "Bunyi memerlukan medium atau zat perantara untuk merambat"
+    ],
+    "jawaban_benar": "Bunyi memerlukan medium atau zat perantara untuk merambat"
+  },
+  {
+    "no": 3,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Medium perambatan bunyi yang paling cepat menghantarkan gelombang bunyi adalah ...",
+    "pilihan": [
+      "Benda padat seperti besi dan baja",
+      "Zat cair seperti air laut dan air sungai",
+      "Gas seperti udara di atmosfer",
+      "Ruang hampa udara"
+    ],
+    "jawaban_benar": "Benda padat seperti besi dan baja"
+  },
+  {
+    "no": 4,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bunyi dengan frekuensi kurang dari 20 Hz yang hanya dapat didengar oleh hewan tertentu seperti gajah dan paus disebut ...",
+    "pilihan": [
+      "Audiosonik",
+      "Ultrasonik",
+      "Infrasonik",
+      "Supersonik"
+    ],
+    "jawaban_benar": "Infrasonik"
+  },
+  {
+    "no": 5,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Batas frekuensi bunyi audiosonik yang mampu didengar oleh telinga manusia normal adalah ...",
+    "pilihan": [
+      "1 Hz sampai 20 Hz",
+      "20 Hz sampai 20.000 Hz",
+      "20.000 Hz sampai 40.000 Hz",
+      "Lebih dari 50.000 Hz"
+    ],
+    "jawaban_benar": "20 Hz sampai 20.000 Hz"
+  },
+  {
+    "no": 6,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Hewan seperti kelelawar dan lumba-lumba mampu memanfaatkan gelombang ultrasonik yang memiliki frekuensi ...",
+    "pilihan": [
+      "Lebih dari 20.000 Hz",
+      "Antara 20 Hz hingga 20.000 Hz",
+      "Kurang dari 20 Hz",
+      "Tepat pada angka 100 Hz"
+    ],
+    "jawaban_benar": "Lebih dari 20.000 Hz"
+  },
+  {
+    "no": 7,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Tinggi rendahnya nada suatu bunyi yang dihasilkan oleh alat musik dipengaruhi oleh ...",
+    "pilihan": [
+      "Amplitudo getaran",
+      "Jenis medium perambatannya",
+      "Jarak pendengar dari sumber bunyi",
+      "Frekuensi getaran sumber bunyi"
+    ],
+    "jawaban_benar": "Frekuensi getaran sumber bunyi"
+  },
+  {
+    "no": 8,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Kuat lemahnya bunyi yang terdengar oleh telinga manusia bergantung pada ...",
+    "pilihan": [
+      "Cepat rambat bunyi di udara",
+      "Frekuensi getaran dalam satu detik",
+      "Amplitudo atau simpangan terjauh getaran",
+      "Suhu udara di sekitar sumber bunyi"
+    ],
+    "jawaban_benar": "Amplitudo atau simpangan terjauh getaran"
+  },
+  {
+    "no": 9,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bunyi pantul yang terdengar hampir bersamaan dengan bunyi asli sehingga membuat suara terdengar tidak jelas di dalam ruangan tertutup disebut ...",
+    "pilihan": [
+      "Gaung atau kerdam",
+      "Gema",
+      "Resonansi",
+      "Interferensi"
+    ],
+    "jawaban_benar": "Gaung atau kerdam"
+  },
+  {
+    "no": 10,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bunyi pantul yang terdengar lengkap setelah bunyi asli selesai diucapkan, misalnya saat berteriak di depan tebing gunung, disebut ...",
+    "pilihan": [
+      "Gaung",
+      "Gema",
+      "Infrasonik",
+      "Desibel"
+    ],
+    "jawaban_benar": "Gema"
+  },
+  {
+    "no": 11,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bahan yang biasa dipasang pada dinding gedung bioskop dan studio rekaman untuk mencegah terjadinya gaung adalah ...",
+    "pilihan": [
+      "Kaca, keramik, dan aluminium",
+      "Seng, marmer, dan besi",
+      "Beton, granit, dan plastik keras",
+      "Busa, karpet, dan kain wol"
+    ],
+    "jawaban_benar": "Busa, karpet, dan kain wol"
+  },
+  {
+    "no": 12,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bagian telinga luar manusia yang berfungsi menangkap gelombang bunyi dari lingkungan dan meneruskannya ke liang telinga adalah ...",
+    "pilihan": [
+      "Gendang telinga",
+      "Rumah siput (koklea)",
+      "Daun telinga",
+      "Tulang sanggurdi"
+    ],
+    "jawaban_benar": "Daun telinga"
+  },
+  {
+    "no": 13,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Saluran Eustachius pada telinga bagian tengah berperan penting untuk ...",
+    "pilihan": [
+      "Menjaga keseimbangan tekanan udara di dalam dan luar telinga",
+      "Mengubah getaran bunyi menjadi impuls saraf",
+      "Memperkuat getaran suara menuju rumah siput",
+      "Menyaring debu yang masuk ke saluran telinga"
+    ],
+    "jawaban_benar": "Menjaga keseimbangan tekanan udara di dalam dan luar telinga"
+  },
+  {
+    "no": 14,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Teknologi dalam bidang kedokteran yang memanfaatkan gelombang ultrasonik untuk memeriksa kondisi janin di dalam kandungan adalah ...",
+    "pilihan": [
+      "Elektrokardiogram (EKG)",
+      "Sinar-X (Rontgen)",
+      "Stetoskop digital",
+      "Ultrasonografi (USG)"
+    ],
+    "jawaban_benar": "Ultrasonografi (USG)"
+  },
+  {
+    "no": 15,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Kapal laut menggunakan teknologi sonar untuk mengukur kedalaman dasar laut dengan cara memanfaatkan sifat bunyi yang dapat ...",
+    "pilihan": [
+      "Dibiaskan oleh air laut",
+      "Dipantulkan oleh dasar laut",
+      "Diserap oleh terumbu karang",
+      "Diuraikan menjadi beberapa nada"
+    ],
+    "jawaban_benar": "Dipantulkan oleh dasar laut"
+  },
+  {
+    "no": 16,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Kemampuan kelelawar mengetahui letak mangsa dan menghindari rintangan di malam hari menggunakan pantulan bunyi disebut ...",
+    "pilihan": [
+      "Mimikri",
+      "Autotomi",
+      "Ekolokasi",
+      "Hibernasi"
+    ],
+    "jawaban_benar": "Ekolokasi"
+  },
+  {
+    "no": 17,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Alat musik tradisional angklung menghasilkan gelombang bunyi dengan cara ...",
+    "pilihan": [
+      "Ditiup pada bagian lubang atasnya",
+      "Dipetik pada bagian dawai bambunya",
+      "Dipukul menggunakan pemukul kayu",
+      "Digoyangkan sehingga tabung bambu saling berbenturan"
+    ],
+    "jawaban_benar": "Digoyangkan sehingga tabung bambu saling berbenturan"
+  },
+  {
+    "no": 18,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Dokter menggunakan stetoskop untuk mendengarkan detak jantung pasien karena alat tersebut memanfaatkan perambatan bunyi melalui ...",
+    "pilihan": [
+      "Zat padat dan udara di dalam selang",
+      "Ruang hampa di dalam tabung logam",
+      "Gelombang cahaya di dalam selang",
+      "Medan magnet di bagian diafragma"
+    ],
+    "jawaban_benar": "Zat padat dan udara di dalam selang"
+  },
+  {
+    "no": 19,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Cahaya matahari dapat masuk ke dalam ruangan gelap melalui celah jendela dalam bentuk berkas lurus, hal ini membuktikan sifat cahaya yaitu ...",
+    "pilihan": [
+      "Dapat diuraikan",
+      "Dapat dibiaskan",
+      "Merambat lurus",
+      "Menembus benda gelap"
+    ],
+    "jawaban_benar": "Merambat lurus"
+  },
+  {
+    "no": 20,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Benda-benda seperti kaca jendela dan air jernih yang meneruskan hampir seluruh cahaya yang mengenainya termasuk benda ...",
+    "pilihan": [
+      "Gelap (opak)",
+      "Bening (transparan)",
+      "Buram (translusen)",
+      "Pemantul sempurna"
+    ],
+    "jawaban_benar": "Bening (transparan)"
+  },
+  {
+    "no": 21,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Pemantulan cahaya yang terjadi ketika berkas cahaya mengenai permukaan yang rata dan mengilap seperti cermin disebut ...",
+    "pilihan": [
+      "Pemantulan baur",
+      "Pemantulan difus",
+      "Pemantulan teratur",
+      "Pembiasan cahaya"
+    ],
+    "jawaban_benar": "Pemantulan teratur"
+  },
+  {
+    "no": 22,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Ketika seberkas cahaya mengenai permukaan tembok yang kasar, arah pantulannya menyebar ke segala arah yang disebut ...",
+    "pilihan": [
+      "Pemantulan baur atau difus",
+      "Pemantulan teratur",
+      "Dispersi cahaya",
+      "Absorpsi cahaya"
+    ],
+    "jawaban_benar": "Pemantulan baur atau difus"
+  },
+  {
+    "no": 23,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bayangan yang dibentuk oleh cermin datar memiliki sifat ...",
+    "pilihan": [
+      "Nyata, terbalik, dan diperbesar",
+      "Nyata, tegak, dan diperkecil",
+      "Maya, terbalik, dan sama besar",
+      "Maya, tegak, dan sama besar dengan bendanya"
+    ],
+    "jawaban_benar": "Maya, tegak, dan sama besar dengan bendanya"
+  },
+  {
+    "no": 24,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Kaca spion pada sepeda motor dan mobil menggunakan cermin cembung karena cermin cembung menghasilkan bayangan yang ...",
+    "pilihan": [
+      "Diperbesar sehingga objek terlihat sangat dekat",
+      "Diperkecil sehingga jangkauan pandang lebih luas",
+      "Terbalik sehingga mudah dibaca pengemudi",
+      "Nyata dan dapat ditangkap layar"
+    ],
+    "jawaban_benar": "Diperkecil sehingga jangkauan pandang lebih luas"
+  },
+  {
+    "no": 25,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Reflektor pada lampu senter dan lampu utama mobil memanfaatkan cermin cekung agar cahaya yang dihasilkan dapat ...",
+    "pilihan": [
+      "Dipantulkan sejajar dan lebih terang ke depan",
+      "Menyebar ke segala arah secara redup",
+      "Dibiaskan menjadi warna-warni pelangi",
+      "Diserap agar tidak menyilaukan mata"
+    ],
+    "jawaban_benar": "Dipantulkan sejajar dan lebih terang ke depan"
+  },
+  {
+    "no": 26,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Pensil yang dimasukkan ke dalam gelas berisi air bening terlihat tampak patah atau bengkok akibat peristiwa ...",
+    "pilihan": [
+      "Pemantulan teratur",
+      "Penguraian cahaya",
+      "Pembiasan cahaya",
+      "Penyerapan cahaya"
+    ],
+    "jawaban_benar": "Pembiasan cahaya"
+  },
+  {
+    "no": 27,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Pembiasan cahaya terjadi ketika berkas cahaya merambat melewati dua medium yang memiliki perbedaan ...",
+    "pilihan": [
+      "Warna permukaan",
+      "Kerapatan optik",
+      "Suhu ruangan",
+      "Tekanan udara"
+    ],
+    "jawaban_benar": "Kerapatan optik"
+  },
+  {
+    "no": 28,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Pelangi yang muncul di langit setelah hujan merupakan bukti bahwa cahaya putih matahari dapat ...",
+    "pilihan": [
+      "Merambat melengkung mengikuti awan",
+      "Menembus benda gelap di atmosfer",
+      "Dipantulkan secara teratur oleh tanah",
+      "Diuraikan menjadi berbagai warna spektrum"
+    ],
+    "jawaban_benar": "Diuraikan menjadi berbagai warna spektrum"
+  },
+  {
+    "no": 29,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Urutan warna spektrum cahaya hasil dispersi cahaya putih matahari yang tepat adalah ...",
+    "pilihan": [
+      "Merah, kuning, hijau, biru, jingga, ungu, nila",
+      "Ungu, biru, hijau, kuning, jingga, merah, nila",
+      "Merah, jingga, kuning, hijau, biru, nila, ungu",
+      "Jingga, merah, kuning, nila, biru, hijau, ungu"
+    ],
+    "jawaban_benar": "Merah, jingga, kuning, hijau, biru, nila, ungu"
+  },
+  {
+    "no": 30,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Bagian mata manusia yang berfungsi mengatur banyak sedikitnya cahaya yang masuk ke bola mata adalah ...",
+    "pilihan": [
+      "Pupil dan iris",
+      "Kornea dan sklera",
+      "Retina dan saraf optik",
+      "Kelopak mata dan bulu mata"
+    ],
+    "jawaban_benar": "Pupil dan iris"
+  },
+  {
+    "no": 31,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Lensa mata manusia bersifat cembung dan lentur sehingga dapat menebal atau menipis untuk memfokuskan bayangan tepat di ...",
+    "pilihan": [
+      "Kornea",
+      "Retina",
+      "Iris",
+      "Pupil"
+    ],
+    "jawaban_benar": "Retina"
+  },
+  {
+    "no": 32,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Alat optik yang digunakan awak kapal selam untuk mengamati keadaan di permukaan laut dengan memanfaatkan dua cermin datar adalah ...",
+    "pilihan": [
+      "Mikroskop",
+      "Teleskop",
+      "Lup",
+      "Periskop"
+    ],
+    "jawaban_benar": "Periskop"
+  },
+  {
+    "no": 33,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Tukang reparasi jam tangan menggunakan lup untuk melihat komponen mesin yang sangat kecil karena lup menggunakan ...",
+    "pilihan": [
+      "Lensa cembung yang memperbesar bayangan benda",
+      "Lensa cekung yang memperkecil bayangan benda",
+      "Cermin datar yang memantulkan bayangan asli",
+      "Cermin cembung yang memperluas pandangan"
+    ],
+    "jawaban_benar": "Lensa cembung yang memperbesar bayangan benda"
+  },
+  {
+    "no": 34,
+    "bab": "Bab I: Gelombang Bunyi dan Cahaya di Sekitarku",
+    "pertanyaan": "Mikroskop dimanfaatkan dalam bidang biologi dan medis untuk mengamati ...",
+    "pilihan": [
+      "Benda-benda langit yang jaraknya sangat jauh",
+      "Permukaan laut dari dalam kapal selam",
+      "Mikroorganisme atau sel yang berukuran sangat kecil",
+      "Tulang yang patah di dalam tubuh manusia"
+    ],
+    "jawaban_benar": "Mikroorganisme atau sel yang berukuran sangat kecil"
+  },
+  {
+    "no": 35,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Kesatuan interaksi timbal balik antara makhluk hidup dengan lingkungan sekitarnya disebut ...",
+    "pilihan": [
+      "Populasi",
+      "Komunitas",
+      "Habitat",
+      "Ekosistem"
+    ],
+    "jawaban_benar": "Ekosistem"
+  },
+  {
+    "no": 36,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Komponen penyusun ekosistem yang terdiri atas benda-benda tidak hidup seperti air, tanah, udara, dan suhu adalah komponen ...",
+    "pilihan": [
+      "Biotik",
+      "Abiotik",
+      "Produsen",
+      "Dekomposer"
+    ],
+    "jawaban_benar": "Abiotik"
+  },
+  {
+    "no": 37,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Makhluk hidup berklorofil yang mampu membuat makanannya sendiri melalui proses fotosintesis berperan dalam ekosistem sebagai ...",
+    "pilihan": [
+      "Produsen",
+      "Konsumen tingkat I",
+      "Konsumen puncak",
+      "Pengurai"
+    ],
+    "jawaban_benar": "Produsen"
+  },
+  {
+    "no": 38,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Jamur dan bakteri pembusuk di dalam tanah memiliki peran penting dalam ekosistem sebagai ...",
+    "pilihan": [
+      "Produsen utama",
+      "Konsumen primer",
+      "Konsumen sekunder",
+      "Dekomposer atau pengurai"
+    ],
+    "jawaban_benar": "Dekomposer atau pengurai"
+  },
+  {
+    "no": 39,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Sekumpulan individu sejenis yang menempati suatu wilayah tertentu pada waktu yang sama disebut ...",
+    "pilihan": [
+      "Individu",
+      "Populasi",
+      "Komunitas",
+      "Biosfer"
+    ],
+    "jawaban_benar": "Populasi"
+  },
+  {
+    "no": 40,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Kumpulan berbagai populasi makhluk hidup yang saling berinteraksi di suatu habitat tertentu membentuk ...",
+    "pilihan": [
+      "Individu tunggal",
+      "Komponen abiotik",
+      "Komunitas",
+      "Rantai makanan"
+    ],
+    "jawaban_benar": "Komunitas"
+  },
+  {
+    "no": 41,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Contoh ekosistem buatan yang sengaja dibuat manusia untuk memenuhi kebutuhan pangan adalah ...",
+    "pilihan": [
+      "Sawah dan kolam ikan",
+      "Hutan hujan tropis dan padang rumput",
+      "Laut dalam dan terumbu karang",
+      "Sungai dan danau alami"
+    ],
+    "jawaban_benar": "Sawah dan kolam ikan"
+  },
+  {
+    "no": 42,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Ekosistem air tawar yang memiliki ciri air mengalir terus-menerus dari hulu ke hilir adalah ...",
+    "pilihan": [
+      "Danau",
+      "Rawa",
+      "Kolam",
+      "Sungai"
+    ],
+    "jawaban_benar": "Sungai"
+  },
+  {
+    "no": 43,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Peristiwa makan dan dimakan antarmakhluk hidup dengan urutan tertentu yang lurus disebut ...",
+    "pilihan": [
+      "Jaring-jaring makanan",
+      "Rantai makanan",
+      "Simbiosis",
+      "Piramida energi"
+    ],
+    "jawaban_benar": "Rantai makanan"
+  },
+  {
+    "no": 44,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Dalam rantai makanan di sawah: Padi dimakan Tikus, Tikus dimakan Ular, Ular dimakan Elang. Makhluk hidup yang berperan sebagai konsumen tingkat II adalah ...",
+    "pilihan": [
+      "Padi",
+      "Tikus",
+      "Ular",
+      "Elang"
+    ],
+    "jawaban_benar": "Ular"
+  },
+  {
+    "no": 45,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Sumber energi utama yang menggerakkan seluruh rantai makanan di muka bumi berasal dari ...",
+    "pilihan": [
+      "Air hujan",
+      "Angin darat",
+      "Mineral tanah",
+      "Cahaya matahari"
+    ],
+    "jawaban_benar": "Cahaya matahari"
+  },
+  {
+    "no": 46,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Sekumpulan rantai makanan yang saling berhubungan dan tumpang tindih dalam suatu ekosistem disebut ...",
+    "pilihan": [
+      "Rantai makanan tunggal",
+      "Jaring-jaring makanan",
+      "Komunitas abiotik",
+      "Siklus air"
+    ],
+    "jawaban_benar": "Jaring-jaring makanan"
+  },
+  {
+    "no": 47,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Pada piramida makanan, kelompok makhluk hidup yang menempati tingkat trofik paling bawah dengan jumlah energi terbesar adalah ...",
+    "pilihan": [
+      "Produsen",
+      "Konsumen tingkat I",
+      "Konsumen tingkat II",
+      "Konsumen puncak"
+    ],
+    "jawaban_benar": "Produsen"
+  },
+  {
+    "no": 48,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Apabila populasi ular di ekosistem sawah menurun drastis akibat perburuan liar, dampak langsung yang akan terjadi adalah ...",
+    "pilihan": [
+      "Populasi elang meningkat tajam",
+      "Hasil panen padi melimpah ruah",
+      "Populasi tikus meningkat pesat dan merusak tanaman padi",
+      "Populasi katak dan belalang punah seketika"
+    ],
+    "jawaban_benar": "Populasi tikus meningkat pesat dan merusak tanaman padi"
+  },
+  {
+    "no": 49,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Dalam ekosistem laut, organisme mikroskopis yang berperan sebagai produsen utama bagi ikan-ikan kecil adalah ...",
+    "pilihan": [
+      "Zooplankton",
+      "Fitoplankton",
+      "Udang kecil",
+      "Ubur-ubur"
+    ],
+    "jawaban_benar": "Fitoplankton"
+  },
+  {
+    "no": 50,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Konsumen tingkat I dalam rantai makanan umumnya ditempati oleh kelompok hewan pemakan tumbuhan yang disebut ...",
+    "pilihan": [
+      "Karnivora",
+      "Omnivora",
+      "Detritivora",
+      "Herbivora"
+    ],
+    "jawaban_benar": "Herbivora"
+  },
+  {
+    "no": 51,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Hubungan erat antara dua makhluk hidup berbeda jenis yang hidup bersama dalam satu habitat disebut ...",
+    "pilihan": [
+      "Predasi",
+      "Kompetisi",
+      "Simbiosis",
+      "Adaptasi"
+    ],
+    "jawaban_benar": "Simbiosis"
+  },
+  {
+    "no": 52,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Hubungan antara kupu-kupu yang mengisap nektar bunga sekaligus membantu proses penyerbukan bunga termasuk simbiosis ...",
+    "pilihan": [
+      "Mutualisme",
+      "Komensalisme",
+      "Parasitisme",
+      "Netralisme"
+    ],
+    "jawaban_benar": "Mutualisme"
+  },
+  {
+    "no": 53,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Ikan remora yang berenang di dekat ikan hiu untuk mendapatkan sisa makanan tanpa merugikan maupun menguntungkan ikan hiu merupakan contoh simbiosis ...",
+    "pilihan": [
+      "Mutualisme",
+      "Parasitisme",
+      "Predasi",
+      "Komensalisme"
+    ],
+    "jawaban_benar": "Komensalisme"
+  },
+  {
+    "no": 54,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Tumbuhan tali putri yang melilit tanaman inang dan menyerap sari makanannya hingga tanaman inang merana merupakan contoh simbiosis ...",
+    "pilihan": [
+      "Parasitisme",
+      "Mutualisme",
+      "Komensalisme",
+      "Kompetisi"
+    ],
+    "jawaban_benar": "Parasitisme"
+  },
+  {
+    "no": 55,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Hubungan antara singa yang berburu dan memangsa zebra di padang sabana disebut interaksi ...",
+    "pilihan": [
+      "Mutualisme",
+      "Komensalisme",
+      "Predasi",
+      "Parasitisme"
+    ],
+    "jawaban_benar": "Predasi"
+  },
+  {
+    "no": 56,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Persaingan antara sapi dan kambing yang memperebutkan rumput di padang penggembalaan yang sama termasuk interaksi ...",
+    "pilihan": [
+      "Simbiosis mutualisme",
+      "Kompetisi",
+      "Predasi",
+      "Dekomposisi"
+    ],
+    "jawaban_benar": "Kompetisi"
+  },
+  {
+    "no": 57,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Bunga anggrek yang menempel pada batang pohon mangga untuk mendapatkan cahaya matahari tanpa menyerap makanan dari pohon mangga menunjukkan simbiosis ...",
+    "pilihan": [
+      "Komensalisme",
+      "Parasitisme",
+      "Mutualisme",
+      "Predasi"
+    ],
+    "jawaban_benar": "Komensalisme"
+  },
+  {
+    "no": 58,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Burung jalak yang hinggap di punggung kerbau untuk memakan kutu sehingga kerbau terbebas dari rasa gatal merupakan simbiosis ...",
+    "pilihan": [
+      "Parasitisme",
+      "Komensalisme",
+      "Mutualisme",
+      "Kompetisi"
+    ],
+    "jawaban_benar": "Mutualisme"
+  },
+  {
+    "no": 59,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Tumbuhan kaktus beradaptasi dengan lingkungan gurun yang kering dengan cara ...",
+    "pilihan": [
+      "Memiliki daun yang lebar dan tipis",
+      "Menggugurkan seluruh batangnya saat kemarau",
+      "Hidup terapung di atas permukaan pasir",
+      "Memiliki daun berbentuk duri untuk mengurangi penguapan"
+    ],
+    "jawaban_benar": "Memiliki daun berbentuk duri untuk mengurangi penguapan"
+  },
+  {
+    "no": 60,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Teratai memiliki daun yang lebar dan tipis di permukaan air dengan tujuan untuk ...",
+    "pilihan": [
+      "Menyimpan cadangan air selama musim kemarau",
+      "Mempercepat penguapan air dan mengapung di permukaan",
+      "Melindungi diri dari ikan pemakan tumbuhan",
+      "Menyerap oksigen dari dasar lumpur"
+    ],
+    "jawaban_benar": "Mempercepat penguapan air dan mengapung di permukaan"
+  },
+  {
+    "no": 61,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Cicak memutuskan ekornya saat terancam oleh pemangsa untuk mengelabui musuh, kemampuan adaptasi ini disebut ...",
+    "pilihan": [
+      "Mimikri",
+      "Ekolokasi",
+      "Kamuflase",
+      "Autotomi"
+    ],
+    "jawaban_benar": "Autotomi"
+  },
+  {
+    "no": 62,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Penebangan hutan secara liar dan pembakaran lahan dapat mengganggu keseimbangan ekosistem karena mengakibatkan ...",
+    "pilihan": [
+      "Bertambahnya kesuburan lapisan tanah atas",
+      "Hilangnya habitat satwa dan meningkatnya risiko banjir serta erosi",
+      "Meningkatnya keanekaragaman hayati di hutan",
+      "Menurunnya suhu rata-rata udara di sekitar hutan"
+    ],
+    "jawaban_benar": "Hilangnya habitat satwa dan meningkatnya risiko banjir serta erosi"
+  },
+  {
+    "no": 63,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Penggunaan pestisida kimia secara berlebihan di area pertanian dapat merusak ekosistem perairan di sekitarnya karena ...",
+    "pilihan": [
+      "Pestisida mempercepat pertumbuhan tanaman padi",
+      "Pestisida mengubah air sungai menjadi air tawar jernih",
+      "Racun pestisida terbawa aliran air dan mematikan organisme air",
+      "Pestisida menambah kadar oksigen terlarut di sungai"
+    ],
+    "jawaban_benar": "Racun pestisida terbawa aliran air dan mematikan organisme air"
+  },
+  {
+    "no": 64,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Upaya pelestarian ekosistem hutan dengan menanam kembali pohon-pohon di lahan yang gundul disebut ...",
+    "pilihan": [
+      "Reboisasi",
+      "Terasering",
+      "Abrasi",
+      "Urbanisasi"
+    ],
+    "jawaban_benar": "Reboisasi"
+  },
+  {
+    "no": 65,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Cacing tanah membantu menjaga kesuburan komponen abiotik tanah dengan cara ...",
+    "pilihan": [
+      "Memakan akar tanaman muda di ladang",
+      "Memadatkan lapisan tanah agar kedap air",
+      "Menggemburkan tanah dan menguraikan sisa bahan organik",
+      "Mengurangi kadar udara di dalam pori-pori tanah"
+    ],
+    "jawaban_benar": "Menggemburkan tanah dan menguraikan sisa bahan organik"
+  },
+  {
+    "no": 66,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Perpindahan energi dari produsen ke konsumen tingkat I, II, dan III selalu berkurang di setiap tingkatannya karena ...",
+    "pilihan": [
+      "Konsumen tingkat atas tidak membutuhkan energi",
+      "Produsen tidak mampu menyerap cahaya matahari secara penuh",
+      "Pengurai mengambil seluruh energi dari tumbuhan hijau",
+      "Sebagian energi digunakan makhluk hidup untuk beraktivitas dan dilepaskan sebagai panas"
+    ],
+    "jawaban_benar": "Sebagian energi digunakan makhluk hidup untuk beraktivitas dan dilepaskan sebagai panas"
+  },
+  {
+    "no": 67,
+    "bab": "Bab II: Ekosistem Pembentuk Kehidupan di Bumi",
+    "pertanyaan": "Keseimbangan suatu ekosistem dapat terjaga dengan baik apabila ...",
+    "pilihan": [
+      "Jumlah produsen lebih besar dibandingkan jumlah konsumen di atasnya",
+      "Jumlah konsumen puncak lebih banyak daripada produsen",
+      "Tidak ada organisme pengurai di dalam tanah",
+      "Seluruh komponen abiotik dihilangkan dari habitat"
+    ],
+    "jawaban_benar": "Jumlah produsen lebih besar dibandingkan jumlah konsumen di atasnya"
+  },
+  {
+    "no": 68,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Bagian pada batang magnet yang memiliki gaya tarik magnet paling kuat terletak pada ...",
+    "pilihan": [
+      "Bagian tengah batang magnet",
+      "Kedua ujung kutubnya",
+      "Seluruh permukaan secara merata",
+      "Bagian sisi samping magnet"
+    ],
+    "jawaban_benar": "Kedua ujung kutubnya"
+  },
+  {
+    "no": 69,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Jika kutub utara sebuah magnet didekatkan dengan kutub utara magnet lainnya, gaya yang terjadi adalah ...",
+    "pilihan": [
+      "Tolak-menolak",
+      "Tarik-menarik kuat",
+      "Diam tanpa reaksi",
+      "Saling menempel erat"
+    ],
+    "jawaban_benar": "Tolak-menolak"
+  },
+  {
+    "no": 70,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Kutub utara dan kutub selatan magnet akan saling tarik-menarik apabila didekatkan karena ...",
+    "pilihan": [
+      "Kedua kutub memiliki ukuran yang sama",
+      "Kedua kutub terbuat dari logam tembaga",
+      "Kedua kutub memiliki sifat magnet yang berlawanan",
+      "Kedua kutub dialiri arus listrik bolak-balik"
+    ],
+    "jawaban_benar": "Kedua kutub memiliki sifat magnet yang berlawanan"
+  },
+  {
+    "no": 71,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Kelompok benda yang dapat ditarik dengan kuat oleh magnet seperti besi, baja, nikel, dan kobalt disebut benda ...",
+    "pilihan": [
+      "Diamagnetik",
+      "Feromagnetik",
+      "Isolator",
+      "Nonmagnetis"
+    ],
+    "jawaban_benar": "Feromagnetik"
+  },
+  {
+    "no": 72,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Benda-benda berikut yang tidak dapat ditarik oleh magnet karena bersifat nonmagnetis adalah ...",
+    "pilihan": [
+      "Paku besi, peniti, dan jarum jahit",
+      "Gunting baja, klip kertas, dan baut besi",
+      "Sendok besi, kawat baja, dan serbuk besi",
+      "Plastik, kayu, kaca, dan karet"
+    ],
+    "jawaban_benar": "Plastik, kayu, kaca, dan karet"
+  },
+  {
+    "no": 73,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Daerah di sekitar magnet yang masih dipengaruhi oleh gaya tarik magnet disebut ...",
+    "pilihan": [
+      "Kutub magnet",
+      "Garis lintang magnet",
+      "Medan magnet",
+      "Induksi listrik"
+    ],
+    "jawaban_benar": "Medan magnet"
+  },
+  {
+    "no": 74,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Jarum kompas selalu menunjuk ke arah utara dan selatan bumi karena jarum kompas dipengaruhi oleh ...",
+    "pilihan": [
+      "Medan magnet bumi",
+      "Arah tiupan angin muson",
+      "Cahaya matahari pagi",
+      "Gaya gravitasi bulan"
+    ],
+    "jawaban_benar": "Medan magnet bumi"
+  },
+  {
+    "no": 75,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Karet pada pintu lemari es dapat menutup rapat dengan sendirinya karena di dalamnya terdapat ...",
+    "pilihan": [
+      "Lem perekat khusus yang tahan dingin",
+      "Pegas baja yang menarik pintu dari dalam",
+      "Karet hisap vakum tanpa logam",
+      "Magnet batang tipis yang menempel pada rangka besi kulkas"
+    ],
+    "jawaban_benar": "Magnet batang tipis yang menempel pada rangka besi kulkas"
+  },
+  {
+    "no": 76,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Ujung obeng sering diberi sifat magnet agar memudahkan teknisi untuk ...",
+    "pilihan": [
+      "Mengalirkan arus listrik bertegangan tinggi",
+      "Mengambil dan menahan sekrup besi kecil agar tidak mudah jatuh",
+      "Memotong kabel tembaga dengan lebih cepat",
+      "Mengukur suhu komponen elektronik"
+    ],
+    "jawaban_benar": "Mengambil dan menahan sekrup besi kecil agar tidak mudah jatuh"
+  },
+  {
+    "no": 77,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Kereta cepat Maglev mampu melaju sangat kencang dan minim gesekan karena memanfaatkan prinsip ...",
+    "pilihan": [
+      "Gaya tolak-menolak elektromagnet yang mengangkat badan kereta dari rel",
+      "Pembakaran batu bara bertekanan tinggi di dalam mesin",
+      "Putaran roda baja bergerigi di atas rel besi",
+      "Dorongan baling-baling udara di bagian belakang kereta"
+    ],
+    "jawaban_benar": "Gaya tolak-menolak elektromagnet yang mengangkat badan kereta dari rel"
+  },
+  {
+    "no": 78,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Cara membuat magnet dengan menggosokkan magnet tetap pada batang besi harus dilakukan dengan gerakan ...",
+    "pilihan": [
+      "Bolak-balik secara acak",
+      "Memutar searah jarum jam",
+      "Zig-zag dari tengah ke pinggir",
+      "Satu arah secara berulang-ulang"
+    ],
+    "jawaban_benar": "Satu arah secara berulang-ulang"
+  },
+  {
+    "no": 79,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Apabila kutub utara magnet digosokkan berulang kali dari ujung A ke ujung B pada batang besi, maka ujung B batang besi akan menjadi ...",
+    "pilihan": [
+      "Kutub utara magnet",
+      "Kutub selatan magnet",
+      "Bagian netral tanpa gaya tarik",
+      "Kutub ganda utara dan selatan"
+    ],
+    "jawaban_benar": "Kutub selatan magnet"
+  },
+  {
+    "no": 80,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pembuatan magnet sementara dengan cara mendekatkan paku besi pada magnet tetap tanpa menyentuhkannya disebut cara ...",
+    "pilihan": [
+      "Elektromagnetik",
+      "Menggosok",
+      "Induksi",
+      "Konduksi"
+    ],
+    "jawaban_benar": "Induksi"
+  },
+  {
+    "no": 81,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pembuatan magnet dengan melilitkan kawat tembaga berisolasi pada paku besi lalu menghubungkannya ke baterai disebut ...",
+    "pilihan": [
+      "Induksi magnet",
+      "Elektromagnet",
+      "Magnet alam",
+      "Demagnetisasi"
+    ],
+    "jawaban_benar": "Elektromagnet"
+  },
+  {
+    "no": 82,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Cara menambah kekuatan gaya tarik pada magnet buatan jenis elektromagnet adalah dengan ...",
+    "pilihan": [
+      "Mengganti inti besi dengan batang kayu kering",
+      "Mengurangi jumlah lilitan kawat tembaga",
+      "Memperbanyak jumlah lilitan kawat dan menambah tegangan baterai",
+      "Memotong kawat tembaga menjadi lebih pendek tanpa baterai"
+    ],
+    "jawaban_benar": "Memperbanyak jumlah lilitan kawat dan menambah tegangan baterai"
+  },
+  {
+    "no": 83,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Sifat kemagnetan suatu benda dapat hilang apabila magnet tersebut ...",
+    "pilihan": [
+      "Dipanaskan hingga berpijar atau dipukul-pukul dengan keras",
+      "Disimpan di dalam kotak kayu tertutup",
+      "Didekatkan dengan serbuk besi halus",
+      "Digosokkan searah dengan magnet lain"
+    ],
+    "jawaban_benar": "Dipanaskan hingga berpijar atau dipukul-pukul dengan keras"
+  },
+  {
+    "no": 84,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Arus listrik hanya dapat mengalir dan menyalakan lampu apabila berada dalam suatu rangkaian listrik yang ...",
+    "pilihan": [
+      "Terbuka pada bagian sakelarnya",
+      "Menggunakan kabel berbahan plastik murni",
+      "Tidak memiliki sumber tegangan baterai",
+      "Tertutup tanpa ada bagian kabel yang terputus"
+    ],
+    "jawaban_benar": "Tertutup tanpa ada bagian kabel yang terputus"
+  },
+  {
+    "no": 85,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pembangkit listrik yang memanfaatkan aliran air terjun atau bendungan untuk memutar turbin generator disebut ...",
+    "pilihan": [
+      "PLTA (Pembangkit Listrik Tenaga Air)",
+      "PLTU (Pembangkit Listrik Tenaga Uap)",
+      "PLTS (Pembangkit Listrik Tenaga Surya)",
+      "PLTB (Pembangkit Listrik Tenaga Bayu)"
+    ],
+    "jawaban_benar": "PLTA (Pembangkit Listrik Tenaga Air)"
+  },
+  {
+    "no": 86,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Sumber energi alternatif yang mengubah cahaya matahari secara langsung menjadi energi listrik menggunakan sel fotovoltaik adalah ...",
+    "pilihan": [
+      "Turbin angin",
+      "Panel surya",
+      "Generator diesel",
+      "Aki kering"
+    ],
+    "jawaban_benar": "Panel surya"
+  },
+  {
+    "no": 87,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Keunggulan rangkaian listrik paralel yang dipasang pada instalasi rumah tangga adalah ...",
+    "pilihan": [
+      "Membutuhkan kabel yang jauh lebih sedikit",
+      "Nyala lampu menjadi lebih redup dari rangkaian seri",
+      "Jika satu sakelar dimatikan, seluruh rumah ikut padam",
+      "Jika satu lampu padam atau rusak, lampu lainnya tetap menyala"
+    ],
+    "jawaban_benar": "Jika satu lampu padam atau rusak, lampu lainnya tetap menyala"
+  },
+  {
+    "no": 88,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Bahan logam seperti tembaga, aluminium, dan perak banyak digunakan sebagai isi kabel listrik karena bersifat ...",
+    "pilihan": [
+      "Isolator listrik yang kuat",
+      "Semikonduktor alami",
+      "Konduktor listrik yang baik",
+      "Penghambat arus listrik"
+    ],
+    "jawaban_benar": "Konduktor listrik yang baik"
+  },
+  {
+    "no": 89,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Lapisan luar kabel listrik dibungkus menggunakan bahan plastik atau karet yang bersifat isolator dengan tujuan untuk ...",
+    "pilihan": [
+      "Mempercepat aliran arus listrik di dalam kabel",
+      "Menambah daya listrik yang masuk ke peralatan",
+      "Mengubah arus listrik searah menjadi bolak-balik",
+      "Mencegah sengatan listrik saat kabel disentuh manusia"
+    ],
+    "jawaban_benar": "Mencegah sengatan listrik saat kabel disentuh manusia"
+  },
+  {
+    "no": 90,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Tindakan berbahaya yang harus dihindari saat menggunakan peralatan listrik di rumah adalah ...",
+    "pilihan": [
+      "Menyentuh sakelar atau steker listrik dalam keadaan tangan basah",
+      "Mencabut steker peralatan elektronik setelah selesai digunakan",
+      "Menggunakan stopkontak sesuai dengan batas kapasitas dayanya",
+      "Memeriksa kondisi kabel secara berkala agar tidak terkelupas"
+    ],
+    "jawaban_benar": "Menyentuh sakelar atau steker listrik dalam keadaan tangan basah"
+  },
+  {
+    "no": 91,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Salah satu langkah efektif untuk menghemat pemakaian energi listrik di rumah pada siang hari adalah ...",
+    "pilihan": [
+      "Menyalakan seluruh lampu agar ruangan terlihat cerah",
+      "Membiarkan televisi menyala saat tidak ditonton",
+      "Mematikan lampu ruangan dan membuka jendela agar cahaya alami masuk",
+      "Mengatur suhu pendingin ruangan pada angka paling dingin terus-menerus"
+    ],
+    "jawaban_benar": "Mematikan lampu ruangan dan membuka jendela agar cahaya alami masuk"
+  },
+  {
+    "no": 92,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Perubahan bentuk energi yang terjadi saat setrika listrik digunakan untuk merapikan pakaian adalah ...",
+    "pilihan": [
+      "Energi listrik menjadi energi gerak",
+      "Energi listrik menjadi energi panas",
+      "Energi panas menjadi energi listrik",
+      "Energi listrik menjadi energi kimia"
+    ],
+    "jawaban_benar": "Energi listrik menjadi energi panas"
+  },
+  {
+    "no": 93,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Peralatan rumah tangga yang memanfaatkan perubahan energi listrik menjadi energi gerak adalah ...",
+    "pilihan": [
+      "Kipas angin, blender, dan mesin cuci",
+      "Setrika listrik, oven, dan pemanggang roti",
+      "Lampu belajar, senter LED, dan proyektor",
+      "Radio, bel listrik, dan pengeras suara"
+    ],
+    "jawaban_benar": "Kipas angin, blender, dan mesin cuci"
+  },
+  {
+    "no": 94,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pada lampu pijar maupun lampu LED, energi listrik diubah menjadi ...",
+    "pilihan": [
+      "Energi gerak dan energi bunyi",
+      "Energi kimia dan energi potensial",
+      "Energi cahaya dan sedikit energi panas",
+      "Energi magnet dan energi nuklir"
+    ],
+    "jawaban_benar": "Energi cahaya dan sedikit energi panas"
+  },
+  {
+    "no": 95,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Televisi dan telepon pintar memanfaatkan perubahan energi listrik menjadi ...",
+    "pilihan": [
+      "Energi gerak dan energi panas",
+      "Energi kimia dan energi mekanik",
+      "Energi potensial dan energi kinetik",
+      "Energi cahaya dan energi bunyi"
+    ],
+    "jawaban_benar": "Energi cahaya dan energi bunyi"
+  },
+  {
+    "no": 96,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pada perangkat penanak nasi listrik (rice cooker), komponen termostat berfungsi untuk ...",
+    "pilihan": [
+      "Mengubah beras menjadi uap air secara langsung",
+      "Memutus arus pemanas utama secara otomatis saat nasi sudah matang",
+      "Mendinginkan suhu panci bagian dalam setelah matang",
+      "Menyimpan cadangan energi listrik saat listrik padam"
+    ],
+    "jawaban_benar": "Memutus arus pemanas utama secara otomatis saat nasi sudah matang"
+  },
+  {
+    "no": 97,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Dinamo pada sepeda mengubah energi gerak putaran roda menjadi energi listrik sehingga dapat menyalakan ...",
+    "pilihan": [
+      "Bel mekanik sepeda",
+      "Rem cakram roda belakang",
+      "Lampu depan sepeda",
+      "Rantai penggerak pedal"
+    ],
+    "jawaban_benar": "Lampu depan sepeda"
+  },
+  {
+    "no": 98,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Bel listrik di sekolah dapat berbunyi nyaring saat tombol ditekan karena adanya pemanfaatan ...",
+    "pilihan": [
+      "Pemanas listrik yang menggetarkan udara",
+      "Panel surya kecil di dalam kotak bel",
+      "Lensa cembung yang memfokuskan gelombang suara",
+      "Elektromagnet yang menarik pemukul ke arah lonceng logam"
+    ],
+    "jawaban_benar": "Elektromagnet yang menarik pemukul ke arah lonceng logam"
+  },
+  {
+    "no": 99,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Pemanfaatan teknologi informasi dan komunikasi berbasis energi listrik memberikan dampak positif bagi pelajar berupa ...",
+    "pilihan": [
+      "Kemudahan mengakses sumber belajar digital dari berbagai tempat",
+      "Berkurangnya waktu istirahat dan interaksi sosial langsung",
+      "Meningkatnya ketergantungan pada permainan daring",
+      "Bertambahnya limbah elektronik di lingkungan sekolah"
+    ],
+    "jawaban_benar": "Kemudahan mengakses sumber belajar digital dari berbagai tempat"
+  },
+  {
+    "no": 100,
+    "bab": "Bab III: Manfaat Magnet, Listrik, dan Teknologi dalam Kehidupan",
+    "pertanyaan": "Penggunaan perangkat teknologi elektronik secara bijak perlu diterapkan dalam kehidupan sehari-hari agar ...",
+    "pilihan": [
+      "Baterai perangkat cepat rusak dan harus sering diganti",
+      "Kesehatan mata terjaga, tagihan listrik hemat, dan sampah elektronik berkurang",
+      "Perangkat dapat menyala terus-menerus selama 24 jam penuh",
+      "Konsumsi energi listrik nasional meningkat pesat"
+    ],
+    "jawaban_benar": "Kesehatan mata terjaga, tagihan listrik hemat, dan sampah elektronik berkurang"
+  }
+];
+
+export const IPAS_QUESTIONS: Question[] = RAW_IPAS_QUESTIONS.map(raw => ({
+  id: `ipas_${String(raw.no).padStart(3, '0')}`,
+  type: 'multiple_choice',
+  difficulty: 'medium',
+  category: 'IPAS',
+  subject: 'ipas',
+  text: raw.pertanyaan,
+  options: raw.pilihan,
+  correctAnswer: raw.jawaban_benar,
+  timeLimit: 30,
+  coinsReward: 20,
+  movementReward: 4,
+  tags: ['IPAS', raw.bab],
+}));
