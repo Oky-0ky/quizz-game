@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/store/gameStore';
 import { MonopolyDuration, useMonopolyStore } from '@/store/monopolyStore';
@@ -61,6 +62,7 @@ const DEFAULT_TEAMS: TeamDraft[] = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
   const startNewGame = useGameStore(s => s.startNewGame);
   const startMonopolyGame = useMonopolyStore(s => s.startGame);
 
@@ -127,6 +129,13 @@ export default function LandingPage() {
         <header className="mb-8 text-center">
           <h1 className="font-display text-4xl text-white md:text-5xl">Pilih Game</h1>
           <p className="mt-2 text-white/60">Pilih jenis permainan, lalu tekan Mulai.</p>
+          <button
+            onClick={() => router.push('/battle-block')}
+            className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-orange-200/50 bg-gradient-to-r from-orange-400 to-rose-500 px-5 py-3 text-left text-white shadow-lg transition hover:-translate-y-0.5 hover:brightness-110"
+          >
+            <span className="text-3xl">🧱</span>
+            <span><span className="block text-sm font-black">BATTLE BLOCK QUIZ</span><span className="block text-xs text-white/85">Bangun menara, tantang kelompok lain</span></span>
+          </button>
         </header>
 
         {/* Game selection */}

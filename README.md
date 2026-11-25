@@ -84,7 +84,14 @@ Aplikasi web game edukasi interaktif multiplayer berkelompok dengan konsep perma
 - Durasi dapat ditentukan berdasarkan 10/15/20 putaran atau batas waktu.
 - Panel Admin menyediakan bobot peluang relatif untuk tiap angka dadu (1–6); bobot lebih kecil membuat angka lebih sulit muncul dan pengaturannya berlaku pada permainan berikutnya.
 
-### 11. Database PostgreSQL / Supabase
+### 11. Battle Block Quiz
+- Mode kuis kompetitif baru di `/battle-block` untuk 3–6 kelompok dengan giliran otomatis antaranggota.
+- Jawaban benar menambahkan balok ke menara, memberi koin, dan mengaktifkan bonus streak.
+- Termasuk bank soal bawaan, editor soal pilihan ganda/benar-salah/isian, pengaturan durasi dan tingkat kesulitan.
+- Toko berisi Bom Block, Double Block, Shield, Steal Block, Repair Block, dan Freeze dengan batas pemakaian per permainan.
+- Dashboard menampilkan menara, statistik, leaderboard, panel guru, hasil akhir, dan progres tersimpan di LocalStorage.
+
+### 12. Database PostgreSQL / Supabase
 - 20 tabel lengkap (`users`, `game_rooms`, `teams`, `team_members`, `board_configs`, `board_tiles`, `questions`, `question_categories`, `game_turns`, `answers`, `team_positions`, `team_coins`, `shop_items`, `team_inventory`, `item_usage`, `random_events`, `missions`, `duels`, `achievements`, `game_results`).
 - File schema siap pakai: `supabase/schema.sql`.
 
